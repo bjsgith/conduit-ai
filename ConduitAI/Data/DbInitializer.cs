@@ -35,24 +35,24 @@ public static class DbInitializer
                 Budget = 875_000m,
                 Location = "Scottsdale, AZ",
                 Status = LeadStatus.Qualified,
-                Notes = "Relocating from Chicago for a new role. Two school-age kids; prioritizing top school districts. Wants to be settled before the fall semester.",
+                Notes = "Relocating from Chicago for a new role. Buyer stated a strong preference for school-district information and wants to be settled before the fall semester.",
                 CreatedAt = now.AddDays(-18),
                 UpdatedAt = now.AddDays(-1),
                 Interactions = new List<LeadInteraction>
                 {
                     new() { InteractionType = InteractionType.PhoneCall, OccurredAt = now.AddDays(-18), CreatedAt = now.AddDays(-18), Notes = "Intro call. Confirmed budget up to 900k and a hard relocation deadline of August." },
-                    new() { InteractionType = InteractionType.Email, OccurredAt = now.AddDays(-12), CreatedAt = now.AddDays(-12), Notes = "Sent three Scottsdale listings in the Cherokee and Hopi school zones." },
+                    new() { InteractionType = InteractionType.Email, OccurredAt = now.AddDays(-12), CreatedAt = now.AddDays(-12), Notes = "Sent three Scottsdale listings matching the buyer's stated school-district preference." },
                     new() { InteractionType = InteractionType.PropertyTour, OccurredAt = now.AddDays(-3), CreatedAt = now.AddDays(-3), Notes = "Toured two homes near Gainey Ranch. Liked the second; wants a second viewing with spouse." }
                 },
                 Analyses = new List<LeadAnalysis>
                 {
                     new()
                     {
-                        Summary = "Relocating buyer with a firm August deadline and a strong school-district focus in Scottsdale. Budget and intent are well qualified.",
+                        Summary = "Relocating buyer with a firm August deadline and a stated school-district preference in Scottsdale. Budget and intent are well qualified.",
                         LeadScore = 88,
                         UrgencyLevel = UrgencyLevel.High,
                         BuyingIntent = BuyingIntent.High,
-                        RecommendedNextAction = "Schedule a spousal second viewing of the Gainey Ranch home within 48 hours and prepare comparable listings in the same school zone.",
+                        RecommendedNextAction = "Schedule a second viewing of the Gainey Ranch home within 48 hours and prepare comparable listings that match the stated school-district preference.",
                         GeneratedAt = now.AddDays(-3),
                         ModelName = SeedModelName,
                         PromptVersion = SeedPromptVersion

@@ -23,7 +23,7 @@ namespace ConduitAI.Migrations
                     LeadSource = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
                     Budget = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Location = table.Column<string>(type: "TEXT", maxLength: 150, nullable: true),
-                    Notes = table.Column<string>(type: "TEXT", nullable: true),
+                    Notes = table.Column<string>(type: "TEXT", maxLength: 8000, nullable: true),
                     Status = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
@@ -40,11 +40,11 @@ namespace ConduitAI.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     LeadId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Summary = table.Column<string>(type: "TEXT", nullable: false),
+                    Summary = table.Column<string>(type: "TEXT", maxLength: 1200, nullable: false),
                     LeadScore = table.Column<int>(type: "INTEGER", nullable: false),
                     UrgencyLevel = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     BuyingIntent = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    RecommendedNextAction = table.Column<string>(type: "TEXT", nullable: false),
+                    RecommendedNextAction = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     GeneratedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModelName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     PromptVersion = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
@@ -90,11 +90,11 @@ namespace ConduitAI.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     LeadId = table.Column<int>(type: "INTEGER", nullable: true),
-                    RawNotes = table.Column<string>(type: "TEXT", nullable: false),
-                    StructuredSummary = table.Column<string>(type: "TEXT", nullable: false),
-                    KeyFactsJson = table.Column<string>(type: "TEXT", nullable: false),
-                    RisksJson = table.Column<string>(type: "TEXT", nullable: false),
-                    RecommendedNextAction = table.Column<string>(type: "TEXT", nullable: false),
+                    RawNotes = table.Column<string>(type: "TEXT", maxLength: 20000, nullable: false),
+                    StructuredSummary = table.Column<string>(type: "TEXT", maxLength: 1200, nullable: false),
+                    KeyFactsJson = table.Column<string>(type: "TEXT", maxLength: 4000, nullable: false),
+                    RisksJson = table.Column<string>(type: "TEXT", maxLength: 4000, nullable: false),
+                    RecommendedNextAction = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     ModelName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     PromptVersion = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
@@ -107,7 +107,7 @@ namespace ConduitAI.Migrations
                         column: x => x.LeadId,
                         principalTable: "Leads",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(

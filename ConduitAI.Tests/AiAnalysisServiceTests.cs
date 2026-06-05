@@ -20,7 +20,8 @@ public class AiAnalysisServiceTests
 
     private static async Task<int> SeedLeadAsync(AppDbContext db)
     {
-        var lead = new Lead { Name = "Marcus", LeadSource = LeadSource.Referral, Status = LeadStatus.Qualified, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        var now = DateTime.UtcNow.AddDays(-1);
+        var lead = new Lead { Name = "Marcus", LeadSource = LeadSource.Referral, Status = LeadStatus.Qualified, CreatedAt = now, UpdatedAt = now };
         db.Leads.Add(lead);
         await db.SaveChangesAsync();
         return lead.Id;
@@ -31,6 +32,7 @@ public class AiAnalysisServiceTests
     {
         using var db = TestDb.Create();
         var leadId = await SeedLeadAsync(db);
+        var originalUpdated = (await db.Leads.FindAsync(leadId))!.UpdatedAt;
         var ollama = new FakeOllamaClient(OllamaResult.Ok(ValidJson));
         var svc = NewService(db, ollama);
 
@@ -43,6 +45,7 @@ public class AiAnalysisServiceTests
         Assert.Equal(leadId, stored.LeadId);
         Assert.Equal(UrgencyLevel.High, stored.UrgencyLevel);
         Assert.Equal(AiPromptBuilder.LeadAnalysisPromptVersion, stored.PromptVersion);
+        Assert.True((await db.Leads.FindAsync(leadId))!.UpdatedAt > originalUpdated);
     }
 
     [Fact]
@@ -118,6 +121,25 @@ public class AiAnalysisServiceTests
         var invalidIntent = "{\"summary\":\"S\",\"leadScore\":84,\"urgencyLevel\":\"High\"," +
                             "\"buyingIntent\":\"maybe\",\"recommendedNextAction\":\"A\"}";
         var ollama = new FakeOllamaClient(OllamaResult.Ok(missingScore), OllamaResult.Ok(invalidIntent));
+        var svc = NewService(db, ollama);
+
+        var result = await svc.GenerateAsync(leadId);
+
+        Assert.False(result.Success);
+        Assert.Equal(2, ollama.CallCount);
+        Assert.Equal(0, await db.LeadAnalyses.CountAsync());
+    }
+
+    [Fact]
+    public async Task GenerateAsync_OverlongResponses_FailsAndStoresNothing()
+    {
+        using var db = TestDb.Create();
+        var leadId = await SeedLeadAsync(db);
+        var longSummary = new string('x', AiResponseParser.MaxSummaryLength + 1);
+        var overlong = $$"""
+        {"summary":"{{longSummary}}","leadScore":84,"urgencyLevel":"High","buyingIntent":"High","recommendedNextAction":"A"}
+        """;
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(overlong), OllamaResult.Ok(overlong));
         var svc = NewService(db, ollama);
 
         var result = await svc.GenerateAsync(leadId);

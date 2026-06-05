@@ -14,6 +14,7 @@ public class LeadAnalysis
     public int LeadId { get; set; }
 
     [Required]
+    [StringLength(1200)]
     public string Summary { get; set; } = string.Empty;
 
     [Range(0, 100)]
@@ -24,6 +25,7 @@ public class LeadAnalysis
     public BuyingIntent BuyingIntent { get; set; }
 
     [Required]
+    [StringLength(500)]
     public string RecommendedNextAction { get; set; } = string.Empty;
 
     public DateTime GeneratedAt { get; set; }

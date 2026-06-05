@@ -54,6 +54,8 @@ public class MeetingNotesServiceTests
         var interaction = await db.LeadInteractions.SingleAsync();
         Assert.Equal(lead.Id, interaction.LeadId);
         Assert.Equal(InteractionType.Meeting, interaction.InteractionType);
+        Assert.Equal(DateTimeKind.Local, interaction.OccurredAt.Kind);
+        Assert.Equal(DateTimeKind.Utc, interaction.CreatedAt.Kind);
 
         Assert.True((await db.Leads.FindAsync(lead.Id))!.UpdatedAt > originalUpdated);
     }
@@ -100,6 +102,25 @@ public class MeetingNotesServiceTests
         Assert.False(result.Success);
         Assert.Equal(2, ollama.CallCount);
         Assert.Equal(0, await db.MeetingNotes.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateAsync_OverlongResponses_StoresNothing()
+    {
+        using var db = TestDb.Create();
+        var longSummary = new string('x', AiResponseParser.MaxSummaryLength + 1);
+        var overlong = $$"""
+        {"structuredSummary":"{{longSummary}}","keyFacts":[],"risks":[],"recommendedNextAction":"A"}
+        """;
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(overlong), OllamaResult.Ok(overlong));
+        var svc = NewService(db, ollama);
+
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Meeting notes with enough detail." });
+
+        Assert.False(result.Success);
+        Assert.Equal(2, ollama.CallCount);
+        Assert.Equal(0, await db.MeetingNotes.CountAsync());
+        Assert.Equal(0, await db.LeadInteractions.CountAsync());
     }
 
     [Fact]

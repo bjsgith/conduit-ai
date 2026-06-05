@@ -49,8 +49,8 @@ public class DashboardServiceTests
 
         Assert.Equal(5, vm.TotalLeads);
         Assert.Equal(1, vm.NewLeads);
-        // High priority: qualifiedHot (score 88), contactedUrgent (High), lostLead (score 80 & High) = 3
-        Assert.Equal(3, vm.HighPriorityLeads);
+        // High priority excludes closed/lost leads even when they have high score/urgency.
+        Assert.Equal(2, vm.HighPriorityLeads);
         // Follow-ups: qualifiedHot + contactedUrgent + coldLead (have next action, not Closed/Lost) = 3
         Assert.Equal(3, vm.UpcomingFollowUps);
     }
@@ -79,6 +79,28 @@ public class DashboardServiceTests
 
         Assert.DoesNotContain(vm.FollowUpQueue, f => f.LeadName == "Lost Lead");
         Assert.Contains(vm.FollowUpQueue, f => f.LeadName == "Qualified Hot");
+    }
+
+    [Fact]
+    public async Task GetDashboard_LatestAnalysis_TiesByIdDescending()
+    {
+        using var db = TestDb.Create();
+        var now = DateTime.UtcNow;
+        var lead = Lead("Tie Lead", LeadStatus.Qualified, now);
+        db.Leads.Add(lead);
+        await db.SaveChangesAsync();
+        db.LeadAnalyses.AddRange(
+            new LeadAnalysis { LeadId = lead.Id, Summary = "old", LeadScore = 30, UrgencyLevel = UrgencyLevel.Low, BuyingIntent = BuyingIntent.Low, RecommendedNextAction = "old", GeneratedAt = now, ModelName = "m", PromptVersion = "v" },
+            new LeadAnalysis { LeadId = lead.Id, Summary = "new", LeadScore = 90, UrgencyLevel = UrgencyLevel.High, BuyingIntent = BuyingIntent.High, RecommendedNextAction = "new", GeneratedAt = now, ModelName = "m", PromptVersion = "v" });
+        await db.SaveChangesAsync();
+        var svc = new DashboardService(db);
+
+        var vm = await svc.GetDashboardAsync();
+
+        Assert.Single(vm.RecentLeads);
+        Assert.Equal(90, vm.RecentLeads[0].LatestLeadScore);
+        Assert.Single(vm.FollowUpQueue);
+        Assert.Equal("new", vm.FollowUpQueue[0].RecommendedNextAction);
     }
 
     [Fact]

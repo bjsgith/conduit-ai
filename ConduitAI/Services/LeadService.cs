@@ -59,6 +59,7 @@ public class LeadService : ILeadService
                 Lead = l,
                 Latest = l.Analyses
                     .OrderByDescending(a => a.GeneratedAt)
+                    .ThenByDescending(a => a.Id)
                     .Select(a => new { a.LeadScore, a.UrgencyLevel })
                     .FirstOrDefault()
             });

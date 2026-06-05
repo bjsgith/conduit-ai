@@ -48,6 +48,7 @@ namespace ConduitAI.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
+                        .HasMaxLength(8000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Phone")
@@ -103,10 +104,12 @@ namespace ConduitAI.Migrations
 
                     b.Property<string>("RecommendedNextAction")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Summary")
                         .IsRequired()
+                        .HasMaxLength(1200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UrgencyLevel")
@@ -164,6 +167,7 @@ namespace ConduitAI.Migrations
 
                     b.Property<string>("KeyFactsJson")
                         .IsRequired()
+                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("LeadId")
@@ -181,18 +185,22 @@ namespace ConduitAI.Migrations
 
                     b.Property<string>("RawNotes")
                         .IsRequired()
+                        .HasMaxLength(20000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RecommendedNextAction")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RisksJson")
                         .IsRequired()
+                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StructuredSummary")
                         .IsRequired()
+                        .HasMaxLength(1200)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -231,7 +239,7 @@ namespace ConduitAI.Migrations
                     b.HasOne("ConduitAI.Models.Lead", "Lead")
                         .WithMany("MeetingNotes")
                         .HasForeignKey("LeadId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Lead");
                 });

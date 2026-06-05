@@ -31,6 +31,7 @@ public class Lead
     [StringLength(150)]
     public string? Location { get; set; }
 
+    [StringLength(8000)]
     public string? Notes { get; set; }
 
     [Required]

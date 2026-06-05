@@ -11,6 +11,11 @@ namespace ConduitAI.Services;
 /// </summary>
 public class AiResponseParser
 {
+    public const int MaxSummaryLength = 1200;
+    public const int MaxRecommendedNextActionLength = 500;
+    public const int MaxArrayItems = 8;
+    public const int MaxArrayItemLength = 300;
+
     public AiOperationResult<LeadAnalysisResult> ParseLeadAnalysis(string raw)
     {
         if (!TryExtractJsonObject(raw, out var json))
@@ -23,12 +28,10 @@ public class AiResponseParser
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            var summary = GetString(root, "summary");
-            var nextAction = GetString(root, "recommendedNextAction");
-
-            if (string.IsNullOrWhiteSpace(summary) || string.IsNullOrWhiteSpace(nextAction))
+            if (!TryGetRequiredString(root, "summary", MaxSummaryLength, out var summary)
+                || !TryGetRequiredString(root, "recommendedNextAction", MaxRecommendedNextActionLength, out var nextAction))
             {
-                return AiOperationResult<LeadAnalysisResult>.Fail("Model response was missing a summary or next action.");
+                return AiOperationResult<LeadAnalysisResult>.Fail("Model response was missing a valid summary or next action.");
             }
 
             if (!TryGetRequiredInt(root, "leadScore", out var leadScore))
@@ -44,8 +47,8 @@ public class AiResponseParser
 
             var result = new LeadAnalysisResult
             {
-                Summary = summary.Trim(),
-                RecommendedNextAction = nextAction.Trim(),
+                Summary = summary,
+                RecommendedNextAction = nextAction,
                 LeadScore = ClampScore(leadScore),
                 UrgencyLevel = urgencyLevel,
                 BuyingIntent = buyingIntent
@@ -71,12 +74,10 @@ public class AiResponseParser
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            var summary = GetString(root, "structuredSummary");
-            var nextAction = GetString(root, "recommendedNextAction");
-
-            if (string.IsNullOrWhiteSpace(summary) || string.IsNullOrWhiteSpace(nextAction))
+            if (!TryGetRequiredString(root, "structuredSummary", MaxSummaryLength, out var summary)
+                || !TryGetRequiredString(root, "recommendedNextAction", MaxRecommendedNextActionLength, out var nextAction))
             {
-                return AiOperationResult<MeetingNotesResult>.Fail("Model response was missing a summary or next action.");
+                return AiOperationResult<MeetingNotesResult>.Fail("Model response was missing a valid summary or next action.");
             }
 
             if (!TryGetRequiredStringArray(root, "keyFacts", out var keyFacts)
@@ -87,8 +88,8 @@ public class AiResponseParser
 
             var result = new MeetingNotesResult
             {
-                StructuredSummary = summary.Trim(),
-                RecommendedNextAction = nextAction.Trim(),
+                StructuredSummary = summary,
+                RecommendedNextAction = nextAction,
                 KeyFacts = keyFacts,
                 Risks = risks
             };
@@ -125,19 +126,22 @@ public class AiResponseParser
 
     private static int ClampScore(int score) => Math.Clamp(score, 0, 100);
 
-    private static string? GetString(JsonElement root, string name)
+    private static bool TryGetRequiredString(JsonElement root, string name, int maxLength, out string value)
     {
-        if (!root.TryGetProperty(name, out var el))
+        value = string.Empty;
+        if (!root.TryGetProperty(name, out var el) || el.ValueKind != JsonValueKind.String)
         {
-            return null;
+            return false;
         }
 
-        return el.ValueKind switch
+        var trimmed = el.GetString()?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Length > maxLength)
         {
-            JsonValueKind.String => el.GetString(),
-            JsonValueKind.Number => el.ToString(),
-            _ => null
-        };
+            return false;
+        }
+
+        value = trimmed;
+        return true;
     }
 
     private static bool TryGetRequiredInt(JsonElement root, string name, out int value)
@@ -168,9 +172,7 @@ public class AiResponseParser
         where TEnum : struct, Enum
     {
         value = default;
-        var raw = GetString(root, name);
-        var trimmed = raw?.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
+        if (!TryGetRequiredString(root, name, 40, out var trimmed))
         {
             return false;
         }
@@ -192,6 +194,11 @@ public class AiResponseParser
             return false;
         }
 
+        if (el.GetArrayLength() > MaxArrayItems)
+        {
+            return false;
+        }
+
         foreach (var item in el.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString()))
@@ -199,7 +206,13 @@ public class AiResponseParser
                 return false;
             }
 
-            list.Add(item.GetString()!.Trim());
+            var trimmed = item.GetString()!.Trim();
+            if (trimmed.Length > MaxArrayItemLength)
+            {
+                return false;
+            }
+
+            list.Add(trimmed);
         }
 
         return true;

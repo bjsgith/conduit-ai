@@ -39,6 +39,7 @@ public class DashboardService : IDashboardService
                 l.UpdatedAt,
                 Latest = l.Analyses
                     .OrderByDescending(a => a.GeneratedAt)
+                    .ThenByDescending(a => a.Id)
                     .Select(a => new
                     {
                         a.LeadScore,
@@ -55,6 +56,8 @@ public class DashboardService : IDashboardService
 
         var highPriority = leads.Count(l =>
             l.Latest != null &&
+            l.Status != LeadStatus.Closed &&
+            l.Status != LeadStatus.Lost &&
             (l.Latest.LeadScore >= HighPriorityScoreThreshold || l.Latest.UrgencyLevel == UrgencyLevel.High));
 
         var followUps = leads

@@ -42,11 +42,17 @@ Then open the URL printed by `dotnet run` (by default `http://localhost:5229`).
 AI actions (lead analysis, meeting notes) require Ollama running locally with the configured model:
 
 ```bash
-ollama pull qwen2.5-coder:7b
 ollama serve
 ```
 
-If Ollama is unavailable or returns unparseable output, AI actions fail gracefully with a user-facing message and nothing partial is stored. All other CRM features remain fully usable.
+In another terminal:
+
+```bash
+ollama pull qwen2.5-coder:7b
+ollama list
+```
+
+If Ollama is unavailable, configured to a non-local URL, or returns unparseable output, AI actions fail gracefully with a user-facing message and nothing partial is stored. All other CRM features remain fully usable.
 
 ## Configuration
 
@@ -60,11 +66,13 @@ Ollama settings live in `appsettings.json` under the `Ollama` section:
 }
 ```
 
-`appsettings.json` holds public-safe defaults. To use a different local model without changing the committed defaults, override it in `appsettings.Development.json`, for example:
+`appsettings.json` holds public-safe defaults. To use a different local model without changing committed files, override with environment variables:
 
-```json
-"Ollama": { "Model": "qwen2.5-coder:14b" }
+```bash
+Ollama__Model=qwen2.5-coder:14b dotnet run --project ConduitAI
 ```
+
+AI requests are only sent to loopback Ollama URLs such as `http://localhost:11434` or `http://127.0.0.1:11434`. Non-loopback URLs disable AI features instead of sending private lead data off-machine.
 
 No secrets are required to run the app.
 
@@ -96,7 +104,7 @@ ConduitAI.Tests/  xUnit tests (EF Core InMemory)
 
 ### Data model
 
-SQLite tables: `Leads`, `LeadInteractions`, `LeadAnalyses`, `MeetingNotes`. AI results are stored for auditability rather than overwritten or regenerated automatically.
+SQLite tables: `Leads`, `LeadInteractions`, `LeadAnalyses`, `MeetingNotes`. AI results are stored for auditability rather than overwritten or regenerated automatically. Meeting notes attached to a lead are deleted with that lead; unattached notes are only created through the standalone meeting-notes workflow.
 
 ## Testing
 
@@ -121,3 +129,7 @@ This project is built for a public repository, so security is part of the design
 ## Constraints
 
 By design, ConduitAI is free to run and develop and adds no authentication, roles, Docker, microservices, Redis, queues, cloud infrastructure, CI/CD, paid APIs, or hosted LLM services. Seed data is fictional.
+
+## License
+
+ConduitAI is licensed under the MIT License. Third-party client libraries in `wwwroot/lib` include their own license files.

@@ -24,6 +24,7 @@ public class LeadFormViewModel
     public string? Phone { get; set; }
 
     [Required]
+    [EnumDataType(typeof(LeadSource))]
     [Display(Name = "Lead Source")]
     public LeadSource LeadSource { get; set; }
 
@@ -37,5 +38,6 @@ public class LeadFormViewModel
     public string? Notes { get; set; }
 
     [Required]
+    [EnumDataType(typeof(LeadStatus))]
     public LeadStatus Status { get; set; } = LeadStatus.New;
 }

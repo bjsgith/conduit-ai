@@ -114,6 +114,33 @@ public class AiResponseParserTests
     }
 
     [Theory]
+    [InlineData("{\"summary\":123,\"leadScore\":50,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"summary\":\"S\",\"leadScore\":50,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":123}")]
+    [InlineData("{\"summary\":true,\"leadScore\":50,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"summary\":{\"text\":\"S\"},\"leadScore\":50,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    public void ParseLeadAnalysis_NonStringTextFields_Fail(string raw)
+    {
+        var result = _parser.ParseLeadAnalysis(raw);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public void ParseLeadAnalysis_OverlongTextFields_Fail()
+    {
+        var longSummary = new string('x', AiResponseParser.MaxSummaryLength + 1);
+        var longAction = new string('x', AiResponseParser.MaxRecommendedNextActionLength + 1);
+
+        var summaryResult = _parser.ParseLeadAnalysis(
+            $"{{\"summary\":\"{longSummary}\",\"leadScore\":50,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}}");
+        var actionResult = _parser.ParseLeadAnalysis(
+            $"{{\"summary\":\"S\",\"leadScore\":50,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"{longAction}\"}}");
+
+        Assert.False(summaryResult.Success);
+        Assert.False(actionResult.Success);
+    }
+
+    [Theory]
     [InlineData("not json at all")]
     [InlineData("")]
     [InlineData("{ broken json ")]
@@ -196,5 +223,39 @@ public class AiResponseParserTests
         var result = _parser.ParseMeetingNotes(raw);
 
         Assert.False(result.Success);
+    }
+
+    [Theory]
+    [InlineData("{\"structuredSummary\":123,\"keyFacts\":[],\"risks\":[],\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"structuredSummary\":\"S\",\"keyFacts\":[],\"risks\":[],\"recommendedNextAction\":123}")]
+    [InlineData("{\"structuredSummary\":false,\"keyFacts\":[],\"risks\":[],\"recommendedNextAction\":\"A\"}")]
+    public void ParseMeetingNotes_NonStringTextFields_Fail(string raw)
+    {
+        var result = _parser.ParseMeetingNotes(raw);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public void ParseMeetingNotes_OverlongFieldsOrArrays_Fail()
+    {
+        var longSummary = new string('x', AiResponseParser.MaxSummaryLength + 1);
+        var longAction = new string('x', AiResponseParser.MaxRecommendedNextActionLength + 1);
+        var longItem = new string('x', AiResponseParser.MaxArrayItemLength + 1);
+        var tooManyFacts = string.Join(",", Enumerable.Range(0, AiResponseParser.MaxArrayItems + 1).Select(i => $"\"fact {i}\""));
+
+        var summaryResult = _parser.ParseMeetingNotes(
+            $"{{\"structuredSummary\":\"{longSummary}\",\"keyFacts\":[],\"risks\":[],\"recommendedNextAction\":\"A\"}}");
+        var actionResult = _parser.ParseMeetingNotes(
+            $"{{\"structuredSummary\":\"S\",\"keyFacts\":[],\"risks\":[],\"recommendedNextAction\":\"{longAction}\"}}");
+        var itemResult = _parser.ParseMeetingNotes(
+            $"{{\"structuredSummary\":\"S\",\"keyFacts\":[\"{longItem}\"],\"risks\":[],\"recommendedNextAction\":\"A\"}}");
+        var countResult = _parser.ParseMeetingNotes(
+            $"{{\"structuredSummary\":\"S\",\"keyFacts\":[{tooManyFacts}],\"risks\":[],\"recommendedNextAction\":\"A\"}}");
+
+        Assert.False(summaryResult.Success);
+        Assert.False(actionResult.Success);
+        Assert.False(itemResult.Success);
+        Assert.False(countResult.Success);
     }
 }

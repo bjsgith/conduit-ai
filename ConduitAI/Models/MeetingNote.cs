@@ -13,18 +13,23 @@ public class MeetingNote
     public int? LeadId { get; set; }
 
     [Required]
+    [StringLength(20000)]
     public string RawNotes { get; set; } = string.Empty;
 
     [Required]
+    [StringLength(1200)]
     public string StructuredSummary { get; set; } = string.Empty;
 
     [Required]
+    [StringLength(4000)]
     public string KeyFactsJson { get; set; } = "[]";
 
     [Required]
+    [StringLength(4000)]
     public string RisksJson { get; set; } = "[]";
 
     [Required]
+    [StringLength(500)]
     public string RecommendedNextAction { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }

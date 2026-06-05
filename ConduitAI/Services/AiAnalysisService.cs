@@ -73,6 +73,7 @@ public class AiAnalysisService : IAiAnalysisService
         }
 
         var result = parsed.Value;
+        var generatedAt = DateTime.UtcNow;
         var analysis = new LeadAnalysis
         {
             LeadId = leadId,
@@ -81,12 +82,13 @@ public class AiAnalysisService : IAiAnalysisService
             UrgencyLevel = result.UrgencyLevel,
             BuyingIntent = result.BuyingIntent,
             RecommendedNextAction = result.RecommendedNextAction,
-            GeneratedAt = DateTime.UtcNow,
+            GeneratedAt = generatedAt,
             ModelName = _ollama.ModelName,
             PromptVersion = AiPromptBuilder.LeadAnalysisPromptVersion
         };
 
         _db.LeadAnalyses.Add(analysis);
+        lead.UpdatedAt = generatedAt;
         await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation("Generated analysis {AnalysisId} for lead {LeadId}.", analysis.Id, leadId);

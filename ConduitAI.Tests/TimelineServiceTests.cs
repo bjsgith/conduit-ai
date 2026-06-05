@@ -19,17 +19,19 @@ public class TimelineServiceTests
 
         var svc = new TimelineService(db);
         await Task.Delay(5);
+        var occurredAt = new DateTime(2026, 6, 5, 9, 30, 0, DateTimeKind.Unspecified);
         var ok = await svc.AddInteractionAsync(new InteractionFormViewModel
         {
             LeadId = lead.Id,
             InteractionType = InteractionType.PhoneCall,
-            OccurredAt = DateTime.UtcNow,
+            OccurredAt = occurredAt,
             Notes = "  Spoke about Scottsdale listings.  "
         });
 
         Assert.True(ok);
         var stored = (await svc.GetForLeadAsync(lead.Id)).Single();
         Assert.Equal("Spoke about Scottsdale listings.", stored.Notes);
+        Assert.Equal(occurredAt, stored.OccurredAt);
         Assert.True((await db.Leads.FindAsync(lead.Id))!.UpdatedAt > originalUpdated);
     }
 

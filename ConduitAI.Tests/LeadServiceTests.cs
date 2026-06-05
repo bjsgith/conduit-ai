@@ -68,8 +68,9 @@ public class LeadServiceTests
         var id = await svc.CreateAsync(new LeadFormViewModel { Name = "Old Name", LeadSource = LeadSource.Other, Status = LeadStatus.New });
 
         var before = (await svc.GetByIdAsync(id))!;
+        before.UpdatedAt = DateTime.UtcNow.AddDays(-1);
+        await db.SaveChangesAsync();
         var originalUpdated = before.UpdatedAt;
-        await Task.Delay(5);
 
         var ok = await svc.UpdateAsync(new LeadFormViewModel
         {
@@ -162,6 +163,27 @@ public class LeadServiceTests
         Assert.Single(result.Leads);
         Assert.Equal("Marcus Whitfield", result.Leads[0].Name);
         Assert.Equal(88, result.Leads[0].LatestLeadScore);
+    }
+
+    [Fact]
+    public async Task GetLeadList_LatestAnalysis_TiesByIdDescending()
+    {
+        using var db = TestDb.Create();
+        var now = DateTime.UtcNow;
+        var lead = new Lead { Name = "Tie Lead", LeadSource = LeadSource.Website, Status = LeadStatus.New, CreatedAt = now, UpdatedAt = now };
+        db.Leads.Add(lead);
+        await db.SaveChangesAsync();
+        db.LeadAnalyses.AddRange(
+            new LeadAnalysis { LeadId = lead.Id, Summary = "old", LeadScore = 40, UrgencyLevel = UrgencyLevel.Low, BuyingIntent = BuyingIntent.Low, RecommendedNextAction = "old", GeneratedAt = now, ModelName = "m", PromptVersion = "v" },
+            new LeadAnalysis { LeadId = lead.Id, Summary = "new", LeadScore = 90, UrgencyLevel = UrgencyLevel.High, BuyingIntent = BuyingIntent.High, RecommendedNextAction = "new", GeneratedAt = now, ModelName = "m", PromptVersion = "v" });
+        await db.SaveChangesAsync();
+        var svc = NewService(db);
+
+        var result = await svc.GetLeadListAsync(new LeadFilterViewModel());
+
+        Assert.Single(result.Leads);
+        Assert.Equal(90, result.Leads[0].LatestLeadScore);
+        Assert.Equal(UrgencyLevel.High, result.Leads[0].LatestUrgency);
     }
 
     [Fact]

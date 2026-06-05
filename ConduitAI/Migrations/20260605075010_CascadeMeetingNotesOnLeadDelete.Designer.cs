@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ConduitAI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260605020026_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260605075010_CascadeMeetingNotesOnLeadDelete")]
+    partial class CascadeMeetingNotesOnLeadDelete
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -43,7 +43,7 @@ public class AppDbContext : DbContext
             entity.HasMany(l => l.MeetingNotes)
                   .WithOne(m => m.Lead)
                   .HasForeignKey(m => m.LeadId)
-                  .OnDelete(DeleteBehavior.SetNull);
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<LeadInteraction>(entity =>

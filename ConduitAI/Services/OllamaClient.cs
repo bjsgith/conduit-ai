@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ConduitAI.Services.Ai;
@@ -17,6 +18,8 @@ public class OllamaClient : IOllamaClient
     private readonly HttpClient _http;
     private readonly OllamaOptions _options;
     private readonly ILogger<OllamaClient> _logger;
+    private readonly bool _hasSafeLocalBaseUrl;
+    private readonly string _baseUrlDescription;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
@@ -25,14 +28,27 @@ public class OllamaClient : IOllamaClient
         _options = options.Value;
         _logger = logger;
         _http = http;
-        _http.BaseAddress = new Uri(_options.BaseUrl);
-        _http.Timeout = TimeSpan.FromSeconds(_options.TimeoutSeconds);
+        _http.Timeout = TimeSpan.FromSeconds(Math.Clamp(_options.TimeoutSeconds, 1, 600));
+
+        _hasSafeLocalBaseUrl = TryCreateSafeLocalBaseUri(_options.BaseUrl, out var baseUri, out _baseUrlDescription);
+        if (_hasSafeLocalBaseUrl)
+        {
+            _http.BaseAddress = baseUri;
+        }
     }
 
     public string ModelName => _options.Model;
 
     public async Task<OllamaResult> GenerateAsync(string prompt, CancellationToken ct = default)
     {
+        if (!_hasSafeLocalBaseUrl)
+        {
+            _logger.LogWarning("Refusing to call Ollama because the configured BaseUrl is not local. Host: {Host}.", _baseUrlDescription);
+            return OllamaResult.Fail(
+                "AI features are unavailable because Ollama must be configured on this computer. " +
+                "Use a local URL such as http://localhost:11434.");
+        }
+
         var request = new GenerateRequest
         {
             Model = _options.Model,
@@ -59,6 +75,11 @@ public class OllamaClient : IOllamaClient
                 return OllamaResult.Fail("The local model returned an empty response.");
             }
 
+            if (!body.Done)
+            {
+                return OllamaResult.Fail("The local model returned an incomplete response. Please try again.");
+            }
+
             return OllamaResult.Ok(body.Response);
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
@@ -68,10 +89,53 @@ public class OllamaClient : IOllamaClient
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(ex, "Could not connect to Ollama at {BaseUrl}.", _options.BaseUrl);
+            _logger.LogWarning(ex, "Could not connect to Ollama host {Host}.", _baseUrlDescription);
             return OllamaResult.Fail(
                 "Ollama is not available. Start it with 'ollama serve' and confirm the model is installed.");
         }
+        catch (JsonException)
+        {
+            return OllamaResult.Fail("The local model returned an invalid response.");
+        }
+        catch (NotSupportedException)
+        {
+            return OllamaResult.Fail("The local model returned an unsupported response.");
+        }
+    }
+
+    private static bool TryCreateSafeLocalBaseUri(string rawBaseUrl, out Uri? baseUri, out string hostDescription)
+    {
+        baseUri = null;
+        hostDescription = "(invalid)";
+
+        if (!Uri.TryCreate(rawBaseUrl, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        hostDescription = string.IsNullOrWhiteSpace(uri.Host) ? "(missing)" : uri.Host;
+        if (uri.Scheme is not ("http" or "https"))
+        {
+            return false;
+        }
+
+        if (!IsLoopbackHost(uri.Host))
+        {
+            return false;
+        }
+
+        baseUri = uri;
+        return true;
+    }
+
+    private static bool IsLoopbackHost(string host)
+    {
+        if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return IPAddress.TryParse(host, out var ip) && IPAddress.IsLoopback(ip);
     }
 
     private sealed class GenerateRequest

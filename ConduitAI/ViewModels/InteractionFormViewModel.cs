@@ -17,6 +17,7 @@ public class InteractionFormViewModel
     public DateTime OccurredAt { get; set; } = DateTime.Now;
 
     [Required]
+    [EnumDataType(typeof(InteractionType))]
     [Display(Name = "Type")]
     public InteractionType InteractionType { get; set; } = InteractionType.PhoneCall;
 

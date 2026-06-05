@@ -15,6 +15,8 @@ namespace ConduitAI.Services;
 /// </summary>
 public class MeetingNotesService : IMeetingNotesService
 {
+    private const int TimelineNoteMaxLength = 4000;
+
     private readonly AppDbContext _db;
     private readonly IOllamaClient _ollama;
     private readonly AiPromptBuilder _promptBuilder;
@@ -58,7 +60,8 @@ public class MeetingNotesService : IMeetingNotesService
         }
 
         var result = parsed.Value;
-        var now = DateTime.UtcNow;
+        var nowUtc = DateTime.UtcNow;
+        var occurredAtLocal = DateTime.Now;
 
         var note = new MeetingNote
         {
@@ -68,7 +71,7 @@ public class MeetingNotesService : IMeetingNotesService
             KeyFactsJson = JsonSerializer.Serialize(result.KeyFacts),
             RisksJson = JsonSerializer.Serialize(result.Risks),
             RecommendedNextAction = result.RecommendedNextAction,
-            CreatedAt = now,
+            CreatedAt = nowUtc,
             ModelName = _ollama.ModelName,
             PromptVersion = AiPromptBuilder.MeetingNotesPromptVersion
         };
@@ -82,11 +85,11 @@ public class MeetingNotesService : IMeetingNotesService
             {
                 LeadId = lead.Id,
                 InteractionType = InteractionType.Meeting,
-                OccurredAt = now,
-                CreatedAt = now,
-                Notes = $"Meeting notes captured. Summary: {result.StructuredSummary}"
+                OccurredAt = occurredAtLocal,
+                CreatedAt = nowUtc,
+                Notes = Truncate($"Meeting notes captured. Summary: {result.StructuredSummary}", TimelineNoteMaxLength)
             });
-            lead.UpdatedAt = now;
+            lead.UpdatedAt = nowUtc;
         }
 
         await _db.SaveChangesAsync(ct);
@@ -180,5 +183,15 @@ public class MeetingNotesService : IMeetingNotesService
         {
             return new List<string>();
         }
+    }
+
+    private static string Truncate(string value, int maxLength)
+    {
+        if (value.Length <= maxLength)
+        {
+            return value;
+        }
+
+        return value[..maxLength];
     }
 }
