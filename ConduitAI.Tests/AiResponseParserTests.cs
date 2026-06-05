@@ -59,16 +59,37 @@ public class AiResponseParserTests
     }
 
     [Fact]
-    public void ParseLeadAnalysis_UnknownEnum_FallsBackToMedium()
+    public void ParseLeadAnalysis_UnknownEnum_Fails()
     {
         var raw = "{\"summary\":\"S\",\"leadScore\":50,\"urgencyLevel\":\"URGENT!!\"," +
                   "\"buyingIntent\":\"maybe\",\"recommendedNextAction\":\"A\"}";
 
         var result = _parser.ParseLeadAnalysis(raw);
 
-        Assert.True(result.Success);
-        Assert.Equal(UrgencyLevel.Medium, result.Value!.UrgencyLevel);
-        Assert.Equal(BuyingIntent.Medium, result.Value.BuyingIntent);
+        Assert.False(result.Success);
+        Assert.NotNull(result.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("{\"summary\":\"S\",\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"summary\":\"S\",\"leadScore\":\"high\",\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"summary\":\"S\",\"leadScore\":null,\"urgencyLevel\":\"Low\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    public void ParseLeadAnalysis_MissingOrInvalidScore_Fails(string raw)
+    {
+        var result = _parser.ParseLeadAnalysis(raw);
+
+        Assert.False(result.Success);
+    }
+
+    [Theory]
+    [InlineData("{\"summary\":\"S\",\"leadScore\":50,\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"summary\":\"S\",\"leadScore\":50,\"urgencyLevel\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"summary\":\"S\",\"leadScore\":50,\"urgencyLevel\":\"1\",\"buyingIntent\":\"Low\",\"recommendedNextAction\":\"A\"}")]
+    public void ParseLeadAnalysis_MissingOrInvalidEnums_Fails(string raw)
+    {
+        var result = _parser.ParseLeadAnalysis(raw);
+
+        Assert.False(result.Success);
     }
 
     [Fact]
@@ -134,15 +155,37 @@ public class AiResponseParserTests
     }
 
     [Fact]
-    public void ParseMeetingNotes_MissingArrays_DefaultToEmpty()
+    public void ParseMeetingNotes_EmptyArrays_Succeeds()
     {
-        var raw = "{\"structuredSummary\":\"S\",\"recommendedNextAction\":\"A\"}";
+        var raw = "{\"structuredSummary\":\"S\",\"keyFacts\":[],\"risks\":[],\"recommendedNextAction\":\"A\"}";
 
         var result = _parser.ParseMeetingNotes(raw);
 
         Assert.True(result.Success);
         Assert.Empty(result.Value!.KeyFacts);
         Assert.Empty(result.Value.Risks);
+    }
+
+    [Fact]
+    public void ParseMeetingNotes_MissingArrays_Fails()
+    {
+        var raw = "{\"structuredSummary\":\"S\",\"recommendedNextAction\":\"A\"}";
+
+        var result = _parser.ParseMeetingNotes(raw);
+
+        Assert.False(result.Success);
+    }
+
+    [Theory]
+    [InlineData("{\"structuredSummary\":\"S\",\"keyFacts\":\"Budget 800k\",\"risks\":[],\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"structuredSummary\":\"S\",\"keyFacts\":[],\"risks\":null,\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"structuredSummary\":\"S\",\"keyFacts\":[123],\"risks\":[],\"recommendedNextAction\":\"A\"}")]
+    [InlineData("{\"structuredSummary\":\"S\",\"keyFacts\":[],\"risks\":[\"   \"],\"recommendedNextAction\":\"A\"}")]
+    public void ParseMeetingNotes_MalformedArrays_Fails(string raw)
+    {
+        var result = _parser.ParseMeetingNotes(raw);
+
+        Assert.False(result.Success);
     }
 
     [Fact]

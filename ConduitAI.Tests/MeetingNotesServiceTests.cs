@@ -71,6 +71,38 @@ public class MeetingNotesServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_IncompleteFirstResponse_RetriesOnceThenSucceeds()
+    {
+        using var db = TestDb.Create();
+        var incompleteJson = "{\"structuredSummary\":\"S\",\"recommendedNextAction\":\"A\"}";
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(incompleteJson), OllamaResult.Ok(ValidJson));
+        var svc = NewService(db, ollama);
+
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Notes." });
+
+        Assert.True(result.Success);
+        Assert.Equal(2, ollama.CallCount);
+        Assert.Equal(1, await db.MeetingNotes.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateAsync_IncompleteResponses_StoresNothing()
+    {
+        using var db = TestDb.Create();
+        var missingArrays = "{\"structuredSummary\":\"S\",\"recommendedNextAction\":\"A\"}";
+        var malformedArrays = "{\"structuredSummary\":\"S\",\"keyFacts\":\"Budget 800k\"," +
+                              "\"risks\":[],\"recommendedNextAction\":\"A\"}";
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(missingArrays), OllamaResult.Ok(malformedArrays));
+        var svc = NewService(db, ollama);
+
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Notes." });
+
+        Assert.False(result.Success);
+        Assert.Equal(2, ollama.CallCount);
+        Assert.Equal(0, await db.MeetingNotes.CountAsync());
+    }
+
+    [Fact]
     public async Task CreateAsync_UnknownLead_Fails()
     {
         using var db = TestDb.Create();

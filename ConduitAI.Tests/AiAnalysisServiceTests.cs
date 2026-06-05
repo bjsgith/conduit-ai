@@ -77,11 +77,47 @@ public class AiAnalysisServiceTests
     }
 
     [Fact]
+    public async Task GenerateAsync_IncompleteFirstResponse_RetriesOnceThenSucceeds()
+    {
+        using var db = TestDb.Create();
+        var leadId = await SeedLeadAsync(db);
+        var incompleteJson = "{\"summary\":\"S\",\"urgencyLevel\":\"High\"," +
+                             "\"buyingIntent\":\"High\",\"recommendedNextAction\":\"A\"}";
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(incompleteJson), OllamaResult.Ok(ValidJson));
+        var svc = NewService(db, ollama);
+
+        var result = await svc.GenerateAsync(leadId);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, ollama.CallCount);
+        Assert.Equal(1, await db.LeadAnalyses.CountAsync());
+    }
+
+    [Fact]
     public async Task GenerateAsync_BothAttemptsUnparseable_FailsAndStoresNothing()
     {
         using var db = TestDb.Create();
         var leadId = await SeedLeadAsync(db);
         var ollama = new FakeOllamaClient(OllamaResult.Ok("nope"), OllamaResult.Ok("still nope"));
+        var svc = NewService(db, ollama);
+
+        var result = await svc.GenerateAsync(leadId);
+
+        Assert.False(result.Success);
+        Assert.Equal(2, ollama.CallCount);
+        Assert.Equal(0, await db.LeadAnalyses.CountAsync());
+    }
+
+    [Fact]
+    public async Task GenerateAsync_IncompleteResponses_FailsAndStoresNothing()
+    {
+        using var db = TestDb.Create();
+        var leadId = await SeedLeadAsync(db);
+        var missingScore = "{\"summary\":\"S\",\"urgencyLevel\":\"High\"," +
+                           "\"buyingIntent\":\"High\",\"recommendedNextAction\":\"A\"}";
+        var invalidIntent = "{\"summary\":\"S\",\"leadScore\":84,\"urgencyLevel\":\"High\"," +
+                            "\"buyingIntent\":\"maybe\",\"recommendedNextAction\":\"A\"}";
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(missingScore), OllamaResult.Ok(invalidIntent));
         var svc = NewService(db, ollama);
 
         var result = await svc.GenerateAsync(leadId);

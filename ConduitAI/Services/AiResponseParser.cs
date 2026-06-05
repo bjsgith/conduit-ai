@@ -31,13 +31,24 @@ public class AiResponseParser
                 return AiOperationResult<LeadAnalysisResult>.Fail("Model response was missing a summary or next action.");
             }
 
+            if (!TryGetRequiredInt(root, "leadScore", out var leadScore))
+            {
+                return AiOperationResult<LeadAnalysisResult>.Fail("Model response was missing a valid lead score.");
+            }
+
+            if (!TryGetRequiredEnum(root, "urgencyLevel", out UrgencyLevel urgencyLevel)
+                || !TryGetRequiredEnum(root, "buyingIntent", out BuyingIntent buyingIntent))
+            {
+                return AiOperationResult<LeadAnalysisResult>.Fail("Model response was missing a valid urgency level or buying intent.");
+            }
+
             var result = new LeadAnalysisResult
             {
                 Summary = summary.Trim(),
                 RecommendedNextAction = nextAction.Trim(),
-                LeadScore = ClampScore(GetInt(root, "leadScore")),
-                UrgencyLevel = ParseEnum(GetString(root, "urgencyLevel"), UrgencyLevel.Medium),
-                BuyingIntent = ParseEnum(GetString(root, "buyingIntent"), BuyingIntent.Medium)
+                LeadScore = ClampScore(leadScore),
+                UrgencyLevel = urgencyLevel,
+                BuyingIntent = buyingIntent
             };
 
             return AiOperationResult<LeadAnalysisResult>.Ok(result);
@@ -68,12 +79,18 @@ public class AiResponseParser
                 return AiOperationResult<MeetingNotesResult>.Fail("Model response was missing a summary or next action.");
             }
 
+            if (!TryGetRequiredStringArray(root, "keyFacts", out var keyFacts)
+                || !TryGetRequiredStringArray(root, "risks", out var risks))
+            {
+                return AiOperationResult<MeetingNotesResult>.Fail("Model response was missing valid key facts or risks.");
+            }
+
             var result = new MeetingNotesResult
             {
                 StructuredSummary = summary.Trim(),
                 RecommendedNextAction = nextAction.Trim(),
-                KeyFacts = GetStringArray(root, "keyFacts"),
-                Risks = GetStringArray(root, "risks")
+                KeyFacts = keyFacts,
+                Risks = risks
             };
 
             return AiOperationResult<MeetingNotesResult>.Ok(result);
@@ -108,16 +125,6 @@ public class AiResponseParser
 
     private static int ClampScore(int score) => Math.Clamp(score, 0, 100);
 
-    private static TEnum ParseEnum<TEnum>(string? value, TEnum fallback) where TEnum : struct, Enum
-    {
-        if (!string.IsNullOrWhiteSpace(value) && Enum.TryParse<TEnum>(value.Trim(), ignoreCase: true, out var parsed))
-        {
-            return parsed;
-        }
-
-        return fallback;
-    }
-
     private static string? GetString(JsonElement root, string name)
     {
         if (!root.TryGetProperty(name, out var el))
@@ -133,44 +140,68 @@ public class AiResponseParser
         };
     }
 
-    private static int GetInt(JsonElement root, string name)
+    private static bool TryGetRequiredInt(JsonElement root, string name, out int value)
     {
+        value = 0;
         if (!root.TryGetProperty(name, out var el))
         {
-            return 0;
+            return false;
         }
 
         if (el.ValueKind == JsonValueKind.Number && el.TryGetInt32(out var n))
         {
-            return n;
+            value = n;
+            return true;
         }
 
         if (el.ValueKind == JsonValueKind.String
             && int.TryParse(el.GetString(), out var parsed))
         {
-            return parsed;
+            value = parsed;
+            return true;
         }
 
-        return 0;
+        return false;
     }
 
-    private static List<string> GetStringArray(JsonElement root, string name)
+    private static bool TryGetRequiredEnum<TEnum>(JsonElement root, string name, out TEnum value)
+        where TEnum : struct, Enum
     {
-        var list = new List<string>();
+        value = default;
+        var raw = GetString(root, name);
+        var trimmed = raw?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return false;
+        }
+
+        if (int.TryParse(trimmed, out _) || trimmed.Contains(','))
+        {
+            return false;
+        }
+
+        return Enum.TryParse(trimmed, ignoreCase: true, out value)
+            && Enum.IsDefined(typeof(TEnum), value);
+    }
+
+    private static bool TryGetRequiredStringArray(JsonElement root, string name, out List<string> list)
+    {
+        list = new List<string>();
         if (!root.TryGetProperty(name, out var el) || el.ValueKind != JsonValueKind.Array)
         {
-            return list;
+            return false;
         }
 
         foreach (var item in el.EnumerateArray())
         {
-            var s = item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString();
-            if (!string.IsNullOrWhiteSpace(s))
+            if (item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString()))
             {
-                list.Add(s.Trim());
+                return false;
             }
+
+            list.Add(item.GetString()!.Trim());
         }
 
-        return list;
+        return true;
     }
 }

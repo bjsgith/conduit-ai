@@ -16,7 +16,7 @@ public class InteractionsController : Controller
     // POST /Interactions/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(InteractionFormViewModel form)
+    public async Task<IActionResult> Create([Bind(Prefix = "NewInteraction")] InteractionFormViewModel form)
     {
         if (!ModelState.IsValid)
         {
