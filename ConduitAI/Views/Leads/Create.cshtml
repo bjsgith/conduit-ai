@@ -1,0 +1,25 @@
+@model LeadFormViewModel
+@{
+    ViewData["Title"] = "New Lead";
+}
+
+<div class="page-head">
+    <h1>New Lead</h1>
+    <a class="btn btn-ghost" asp-controller="Leads" asp-action="Index">Cancel</a>
+</div>
+
+<section class="card">
+    <div class="card-body">
+        <form method="post" asp-controller="Leads" asp-action="Create">
+            @await Html.PartialAsync("_LeadForm", Model)
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Create Lead</button>
+                <a class="btn btn-ghost" asp-controller="Leads" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,107 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="metrics">
+    <div class="metric accent">
+        <div class="metric-label">Total Leads</div>
+        <div class="metric-value num">@Model.TotalLeads</div>
+    </div>
+    <div class="metric">
+        <div class="metric-label">New Leads</div>
+        <div class="metric-value num">@Model.NewLeads</div>
+    </div>
+    <div class="metric warn">
+        <div class="metric-label">High Priority</div>
+        <div class="metric-value num">@Model.HighPriorityLeads</div>
+    </div>
+    <div class="metric good">
+        <div class="metric-label">Upcoming Follow-Ups</div>
+        <div class="metric-value num">@Model.UpcomingFollowUps</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <section class="card">
+        <div class="card-head">
+            <h2>Recently Updated</h2>
+            <a class="btn btn-sm btn-ghost" asp-controller="Leads" asp-action="Index">View all</a>
+        </div>
+        @if (Model.RecentLeads.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="big">No leads yet</div>
+                <div>Create your first lead to get started.</div>
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Lead</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lead in Model.RecentLeads)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="cell-name" asp-controller="Leads" asp-action="Details" asp-route-id="@lead.Id">@lead.Name</a>
+                                    <div class="cell-sub">@(string.IsNullOrWhiteSpace(lead.Location) ? "—" : lead.Location)</div>
+                                </td>
+                                <td><span class="badge status-@DisplayText.Slug(lead.Status)">@DisplayText.Humanize(lead.Status)</span></td>
+                                <td>
+                                    @if (lead.LatestLeadScore.HasValue)
+                                    {
+                                        <span class="score-pill @DisplayText.ScoreClass(lead.LatestLeadScore.Value)">@lead.LatestLeadScore</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                                <td class="cell-sub">@lead.UpdatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="card">
+        <div class="card-head">
+            <h2>Follow-Up Queue</h2>
+        </div>
+        <div class="card-body">
+            @if (Model.FollowUpQueue.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="big">Nothing queued</div>
+                    <div>Generate AI analysis on a lead to surface next actions.</div>
+                </div>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (var item in Model.FollowUpQueue)
+                    {
+                        <div>
+                            <div class="ai-scoreline" style="margin-bottom:6px;">
+                                <a class="cell-name" asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId">@item.LeadName</a>
+                                <span class="badge lvl-@DisplayText.Slug(item.Urgency)">@DisplayText.Humanize(item.Urgency) urgency</span>
+                            </div>
+                            <div class="cell-sub">@item.RecommendedNextAction</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+</div>

@@ -1,0 +1,52 @@
+@model MeetingNotesFormViewModel
+@{
+    ViewData["Title"] = "Meeting Notes Assistant";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Meeting Notes Assistant</h1>
+        <span class="count-chip">Turn raw notes into a structured summary, key facts, risks, and a next action.</span>
+    </div>
+</div>
+
+<section class="card">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors" style="margin-bottom:14px;"></div>
+        <form method="post" asp-controller="MeetingNotes" asp-action="Create">
+            <div class="form-grid">
+                <div class="field">
+                    <label asp-for="LeadId"></label>
+                    <select asp-for="LeadId" asp-items="Model.LeadOptions">
+                        <option value="">Not attached to a lead</option>
+                    </select>
+                    <span class="hint">Attaching also logs a timeline entry on the lead.</span>
+                </div>
+                <div class="field"></div>
+                <div class="field full">
+                    <label asp-for="RawNotes"></label>
+                    <textarea asp-for="RawNotes" rows="10" placeholder="Paste the raw meeting notes here…"></textarea>
+                    <span asp-validation-for="RawNotes" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="btnAnalyzeNotes">Analyze Notes</button>
+            </div>
+            <p class="hint" style="margin-top:10px;">Analysis runs on your local Ollama model and may take a few seconds.</p>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Progressive enhancement: show a working state on submit so the user
+        // knows the local model is running.
+        $(function () {
+            $("form").on("submit", function () {
+                if ($(this).valid && !$(this).valid()) { return; }
+                $("#btnAnalyzeNotes").prop("disabled", true).html('<span class="spinner"></span> Analyzing…');
+            });
+        });
+    </script>
+}

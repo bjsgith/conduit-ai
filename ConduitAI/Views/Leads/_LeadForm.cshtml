@@ -1,0 +1,51 @@
+@model LeadFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+<input type="hidden" asp-for="Id" />
+
+<div class="form-grid">
+    <div class="field full">
+        <label asp-for="Name"></label>
+        <input asp-for="Name" placeholder="Full name" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" placeholder="name@example.com" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="field">
+        <label asp-for="Phone"></label>
+        <input asp-for="Phone" placeholder="480-555-0100" />
+        <span asp-validation-for="Phone" class="text-danger"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="LeadSource"></label>
+        <select asp-for="LeadSource" asp-items="Html.GetEnumSelectList<LeadSource>()"></select>
+        <span asp-validation-for="LeadSource" class="text-danger"></span>
+    </div>
+    <div class="field">
+        <label asp-for="Status"></label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<LeadStatus>()"></select>
+        <span asp-validation-for="Status" class="text-danger"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="Budget"></label>
+        <input asp-for="Budget" type="number" step="1000" min="0" placeholder="500000" />
+        <span asp-validation-for="Budget" class="text-danger"></span>
+    </div>
+    <div class="field">
+        <label asp-for="Location"></label>
+        <input asp-for="Location" placeholder="City, State" />
+        <span asp-validation-for="Location" class="text-danger"></span>
+    </div>
+
+    <div class="field full">
+        <label asp-for="Notes"></label>
+        <textarea asp-for="Notes" rows="5" placeholder="Context, preferences, timeline…"></textarea>
+        <span asp-validation-for="Notes" class="text-danger"></span>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"] as string ?? "Home";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " · ConduitAI" : "ConduitAI")</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-mark">C</span>
+                <span class="brand-name">ConduitAI</span>
+            </div>
+            <nav class="side-nav">
+                <a class="side-link @(currentController == "Home" ? "is-active" : "")"
+                   asp-controller="Home" asp-action="Index">
+                    <span class="side-ico">▤</span> Dashboard
+                </a>
+                <a class="side-link @(currentController == "Leads" ? "is-active" : "")"
+                   asp-controller="Leads" asp-action="Index">
+                    <span class="side-ico">◷</span> Leads
+                </a>
+                <a class="side-link @(currentController == "MeetingNotes" ? "is-active" : "")"
+                   asp-controller="MeetingNotes" asp-action="Create">
+                    <span class="side-ico">✎</span> Meeting Notes
+                </a>
+            </nav>
+            <div class="side-foot">
+                <span class="side-tag">Lead intelligence</span>
+                <span class="side-sub">Local · AI-assisted</span>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar-title">@(ViewData["Title"] ?? "Dashboard")</div>
+                <a class="btn btn-primary" asp-controller="Leads" asp-action="Create">+ New Lead</a>
+            </header>
+
+            <main class="content">
+                @if (TempData["Flash"] is string flash)
+                {
+                    <div class="alert alert-success" role="status">@flash</div>
+                }
+                @if (TempData["FlashError"] is string flashError)
+                {
+                    <div class="alert alert-error" role="alert">@flashError</div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

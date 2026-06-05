@@ -1,0 +1,30 @@
+@model Lead
+@{
+    ViewData["Title"] = "Delete Lead";
+}
+
+<div class="page-head">
+    <h1>Delete Lead</h1>
+    <a class="btn btn-ghost" asp-controller="Leads" asp-action="Details" asp-route-id="@Model.Id">Cancel</a>
+</div>
+
+<section class="card">
+    <div class="card-body">
+        <div class="alert alert-error">
+            This will permanently delete <b>@Model.Name</b> along with all timeline interactions,
+            AI analyses, and attached meeting notes. This action cannot be undone.
+        </div>
+
+        <dl class="deflist">
+            <dt>Name</dt><dd>@Model.Name</dd>
+            <dt>Status</dt><dd><span class="badge status-@DisplayText.Slug(Model.Status)">@DisplayText.Humanize(Model.Status)</span></dd>
+            <dt>Location</dt><dd>@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+            <dt>Source</dt><dd>@DisplayText.Humanize(Model.LeadSource)</dd>
+        </dl>
+
+        <form method="post" asp-controller="Leads" asp-action="Delete" asp-route-id="@Model.Id" class="form-actions">
+            <button type="submit" class="btn btn-danger">Delete Lead</button>
+            <a class="btn btn-ghost" asp-controller="Leads" asp-action="Details" asp-route-id="@Model.Id">Cancel</a>
+        </form>
+    </div>
+</section>
