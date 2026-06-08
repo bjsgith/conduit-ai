@@ -54,7 +54,7 @@ public class MeetingNotesServiceTests
         var interaction = await db.LeadInteractions.SingleAsync();
         Assert.Equal(lead.Id, interaction.LeadId);
         Assert.Equal(InteractionType.Meeting, interaction.InteractionType);
-        Assert.Equal(DateTimeKind.Local, interaction.OccurredAt.Kind);
+        Assert.Equal(DateTimeKind.Utc, interaction.OccurredAt.Kind);
         Assert.Equal(DateTimeKind.Utc, interaction.CreatedAt.Kind);
 
         Assert.True((await db.Leads.FindAsync(lead.Id))!.UpdatedAt > originalUpdated);

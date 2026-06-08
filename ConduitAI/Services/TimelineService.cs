@@ -41,7 +41,9 @@ public class TimelineService : ITimelineService
         var interaction = new LeadInteraction
         {
             LeadId = form.LeadId,
-            OccurredAt = form.OccurredAt,
+            // The form posts a local wall-clock time (datetime-local input). Store
+            // it as UTC so all timestamps share one frame; views convert back.
+            OccurredAt = DateTime.SpecifyKind(form.OccurredAt, DateTimeKind.Local).ToUniversalTime(),
             InteractionType = form.InteractionType,
             Notes = form.Notes.Trim(),
             CreatedAt = now

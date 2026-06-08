@@ -15,7 +15,7 @@ else
             <li>
                 <div class="tl-top">
                     <span class="tl-type">@DisplayText.Humanize(item.InteractionType)</span>
-                    <span class="tl-when">@item.OccurredAt.ToString("MMM d, yyyy h:mm tt")</span>
+                    <span class="tl-when">@item.OccurredAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
                     <form method="post" asp-controller="Interactions" asp-action="Delete" asp-route-id="@item.Id"
                           class="tl-del js-confirm" data-confirm="Remove this interaction?">
                         <button type="submit" class="btn btn-sm btn-ghost" title="Remove">✕</button>

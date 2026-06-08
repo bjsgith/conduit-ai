@@ -61,7 +61,6 @@ public class MeetingNotesService : IMeetingNotesService
 
         var result = parsed.Value;
         var nowUtc = DateTime.UtcNow;
-        var occurredAtLocal = DateTime.Now;
 
         var note = new MeetingNote
         {
@@ -85,7 +84,7 @@ public class MeetingNotesService : IMeetingNotesService
             {
                 LeadId = lead.Id,
                 InteractionType = InteractionType.Meeting,
-                OccurredAt = occurredAtLocal,
+                OccurredAt = nowUtc,
                 CreatedAt = nowUtc,
                 Notes = Truncate($"Meeting notes captured. Summary: {result.StructuredSummary}", TimelineNoteMaxLength)
             });
