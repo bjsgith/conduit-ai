@@ -1,0 +1,43 @@
+@model AiAnalysisViewModel
+@{
+    var leadId = ViewData["LeadId"];
+    var hasAnalysis = Model != null;
+}
+
+<section class="card" id="aiPanel" data-lead-id="@leadId">
+    <div class="card-head">
+        <h3>AI Lead Intelligence</h3>
+        <button type="button" id="btnAnalyze" class="btn btn-sm btn-primary">
+            @(hasAnalysis ? "Regenerate" : "Generate Analysis")
+        </button>
+    </div>
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <div id="aiError" class="alert alert-error" style="display:none;" role="alert"></div>
+        <div id="aiResult">
+            @if (!hasAnalysis)
+            {
+                <div class="ai-empty">
+                    <p>No analysis yet. Generate AI intelligence from this lead's profile and timeline.</p>
+                </div>
+            }
+            else
+            {
+                <div class="ai-scoreline">
+                    <span class="ai-bigscore">@Model!.LeadScore<small>/100</small></span>
+                    <span class="badge lvl-@DisplayText.Slug(Model.UrgencyLevel)">@DisplayText.Humanize(Model.UrgencyLevel) urgency</span>
+                    <span class="badge lvl-@DisplayText.Slug(Model.BuyingIntent)">@DisplayText.Humanize(Model.BuyingIntent) intent</span>
+                </div>
+                <p class="ai-summary">@Model.Summary</p>
+                <div class="ai-next">
+                    <b>Recommended next action</b>
+                    @Model.RecommendedNextAction
+                </div>
+                <div class="ai-stamp">
+                    Generated @Model.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                    @(string.IsNullOrWhiteSpace(Model.ModelName) ? "" : $"· {Model.ModelName}")
+                </div>
+            }
+        </div>
+    </div>
+</section>

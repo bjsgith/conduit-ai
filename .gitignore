@@ -1,0 +1,48 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+# .NET / VS
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.swp
+
+# Rider / JetBrains
+.idea/
+
+# Local SQLite databases (never commit data)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+App_Data/
+
+# Logs
+*.log
+logs/
+
+# User secrets / environment-specific config
+secrets.json
+appsettings.*.local.json
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db

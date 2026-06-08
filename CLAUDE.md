@@ -69,7 +69,7 @@ Required precautions:
 
 - Never commit secrets, API keys, passwords, private tokens, local absolute secrets paths, or private customer data.
 - Add and maintain `.gitignore` entries for local databases, logs, user secrets, build outputs, and environment-specific files.
-- Keep `appsettings.json` safe for public defaults. Put local-only overrides in `appsettings.Development.json` or user secrets if needed.
+- Keep `appsettings.json` safe for public defaults. Prefer environment-variable overrides for local settings so tracked config files do not drift.
 - Validate all user input server-side with DataAnnotations and service-level checks.
 - Use ASP.NET Core anti-forgery validation for POST forms.
 - Preserve Razor's default HTML encoding. Do not render user notes or AI output as raw HTML.

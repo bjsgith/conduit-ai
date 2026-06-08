@@ -1,0 +1,62 @@
+@model IReadOnlyList<LeadRowViewModel>
+
+@if (Model.Count == 0)
+{
+    <div class="empty-state">
+        <div class="big">No leads found</div>
+        <div>Try adjusting or clearing your filters.</div>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Lead</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Budget</th>
+                    <th>Score</th>
+                    <th>Urgency</th>
+                    <th>Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var lead in Model)
+                {
+                    <tr>
+                        <td>
+                            <a class="cell-name" asp-controller="Leads" asp-action="Details" asp-route-id="@lead.Id">@lead.Name</a>
+                            <div class="cell-sub">@(string.IsNullOrWhiteSpace(lead.Location) ? "—" : lead.Location)</div>
+                        </td>
+                        <td class="cell-sub">@DisplayText.Humanize(lead.LeadSource)</td>
+                        <td><span class="badge status-@DisplayText.Slug(lead.Status)">@DisplayText.Humanize(lead.Status)</span></td>
+                        <td class="num">@(lead.Budget.HasValue ? lead.Budget.Value.ToString("C0") : "—")</td>
+                        <td>
+                            @if (lead.LatestLeadScore.HasValue)
+                            {
+                                <span class="score-pill @DisplayText.ScoreClass(lead.LatestLeadScore.Value)">@lead.LatestLeadScore</span>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (lead.LatestUrgency.HasValue)
+                            {
+                                <span class="badge lvl-@DisplayText.Slug(lead.LatestUrgency.Value)">@DisplayText.Humanize(lead.LatestUrgency.Value)</span>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
+                        </td>
+                        <td class="cell-sub">@lead.UpdatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

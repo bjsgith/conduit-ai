@@ -1,0 +1,50 @@
+@model LeadListViewModel
+@{
+    ViewData["Title"] = "Leads";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Leads</h1>
+        <span class="count-chip">@Model.TotalCount @(Model.TotalCount == 1 ? "lead" : "leads")@(Model.Filter.HasAnyFilter ? " match your filters" : "")</span>
+    </div>
+    <a class="btn btn-primary" asp-controller="Leads" asp-action="Create">+ New Lead</a>
+</div>
+
+<form method="get" asp-controller="Leads" asp-action="Index" class="filterbar">
+    <div class="field">
+        <label asp-for="Filter.Search">Search</label>
+        <input asp-for="Filter.Search" placeholder="Name, email, notes…" />
+    </div>
+    <div class="field">
+        <label asp-for="Filter.Status">Status</label>
+        <select asp-for="Filter.Status" asp-items="Html.GetEnumSelectList<LeadStatus>()">
+            <option value="">All</option>
+        </select>
+    </div>
+    <div class="field">
+        <label asp-for="Filter.LeadSource">Source</label>
+        <select asp-for="Filter.LeadSource" asp-items="Html.GetEnumSelectList<LeadSource>()">
+            <option value="">All</option>
+        </select>
+    </div>
+    <div class="field">
+        <label asp-for="Filter.MinLeadScore">Min Score</label>
+        <input asp-for="Filter.MinLeadScore" type="number" min="0" max="100" placeholder="0" />
+    </div>
+    <div class="field">
+        <label asp-for="Filter.Location">Location</label>
+        <input asp-for="Filter.Location" placeholder="e.g. Scottsdale" />
+    </div>
+    <div class="field" style="flex-direction:row; gap:8px; align-items:end;">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        @if (Model.Filter.HasAnyFilter)
+        {
+            <a class="btn btn-ghost" asp-controller="Leads" asp-action="Index">Clear</a>
+        }
+    </div>
+</form>
+
+<section class="card">
+    @await Html.PartialAsync("_LeadTable", Model.Leads)
+</section>

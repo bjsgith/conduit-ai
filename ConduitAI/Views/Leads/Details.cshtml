@@ -1,0 +1,140 @@
+@model LeadDetailsViewModel
+@{
+    ViewData["Title"] = Model.Lead.Name;
+    var lead = Model.Lead;
+}
+
+<div class="detail-head">
+    <div>
+        <h1 class="lead-name">@lead.Name</h1>
+        <div class="detail-meta">
+            <span><span class="badge status-@DisplayText.Slug(lead.Status)">@DisplayText.Humanize(lead.Status)</span></span>
+            <span>Source: <b>@DisplayText.Humanize(lead.LeadSource)</b></span>
+            @if (!string.IsNullOrWhiteSpace(lead.Location))
+            {
+                <span>Location: <b>@lead.Location</b></span>
+            }
+            @if (lead.Budget.HasValue)
+            {
+                <span>Budget: <b>@lead.Budget.Value.ToString("C0")</b></span>
+            }
+        </div>
+    </div>
+    <div class="detail-actions">
+        <a class="btn" asp-controller="MeetingNotes" asp-action="Create" asp-route-leadId="@lead.Id">Add Meeting Notes</a>
+        <a class="btn" asp-controller="Leads" asp-action="Edit" asp-route-id="@lead.Id">Edit</a>
+        <a class="btn btn-ghost" asp-controller="Leads" asp-action="Delete" asp-route-id="@lead.Id">Delete</a>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="stack">
+        @if (!string.IsNullOrWhiteSpace(lead.Email) || !string.IsNullOrWhiteSpace(lead.Phone) || !string.IsNullOrWhiteSpace(lead.Notes))
+        {
+            <section class="card">
+                <div class="card-head"><h3>Profile</h3></div>
+                <div class="card-body">
+                    <dl class="deflist">
+                        <dt>Email</dt><dd>@(string.IsNullOrWhiteSpace(lead.Email) ? "—" : lead.Email)</dd>
+                        <dt>Phone</dt><dd>@(string.IsNullOrWhiteSpace(lead.Phone) ? "—" : lead.Phone)</dd>
+                        <dt>Created</dt><dd>@lead.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</dd>
+                        @if (!string.IsNullOrWhiteSpace(lead.Notes))
+                        {
+                            <dt>Notes</dt><dd style="white-space:pre-wrap;">@lead.Notes</dd>
+                        }
+                    </dl>
+                </div>
+            </section>
+        }
+
+        <section class="card">
+            <div class="card-head"><h3>Timeline</h3></div>
+            <div class="card-body">
+                <form method="post" asp-controller="Interactions" asp-action="Create">
+                    <input type="hidden" asp-for="NewInteraction.LeadId" />
+                    <div class="form-grid">
+                        <div class="field">
+                            <label asp-for="NewInteraction.InteractionType"></label>
+                            <select asp-for="NewInteraction.InteractionType" asp-items="Html.GetEnumSelectList<InteractionType>()"></select>
+                        </div>
+                        <div class="field">
+                            <label asp-for="NewInteraction.OccurredAt"></label>
+                            <input asp-for="NewInteraction.OccurredAt" type="datetime-local" />
+                        </div>
+                        <div class="field full">
+                            <label asp-for="NewInteraction.Notes"></label>
+                            <textarea asp-for="NewInteraction.Notes" rows="2" placeholder="What happened?"></textarea>
+                            <span asp-validation-for="NewInteraction.Notes" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-sm">Add Interaction</button>
+                    </div>
+                </form>
+                <hr class="divider" />
+                @await Html.PartialAsync("_Timeline", Model.Interactions)
+            </div>
+        </section>
+    </div>
+
+    <div class="stack">
+        @await Html.PartialAsync("_AiAnalysisPanel", Model.LatestAnalysis, new ViewDataDictionary(ViewData) { { "LeadId", lead.Id } })
+
+        <section class="card">
+            <div class="card-head">
+                <h3>Meeting Notes</h3>
+                <a class="btn btn-sm btn-ghost" asp-controller="MeetingNotes" asp-action="Create" asp-route-leadId="@lead.Id">Add</a>
+            </div>
+            <div class="card-body">
+                @if (Model.MeetingNotes.Count == 0)
+                {
+                    <div class="empty-state">
+                        <div class="big">No meeting notes</div>
+                        <div>Paste raw notes to extract a structured summary.</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="stack">
+                        @foreach (var note in Model.MeetingNotes)
+                        {
+                            <div>
+                                <div class="ai-stamp" style="margin:0 0 6px;">@note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div>
+                                <p class="ai-summary" style="margin-bottom:10px;">@note.StructuredSummary</p>
+                                @if (note.KeyFacts.Count > 0)
+                                {
+                                    <div class="section-title">Key facts</div>
+                                    <ul class="facts" style="margin-bottom:10px;">
+                                        @foreach (var fact in note.KeyFacts)
+                                        {
+                                            <li>@fact</li>
+                                        }
+                                    </ul>
+                                }
+                                @if (note.Risks.Count > 0)
+                                {
+                                    <div class="section-title">Risks</div>
+                                    <ul class="facts risks" style="margin-bottom:10px;">
+                                        @foreach (var risk in note.Risks)
+                                        {
+                                            <li>@risk</li>
+                                        }
+                                    </ul>
+                                }
+                                <div class="ai-next">
+                                    <b>Recommended next action</b>
+                                    @note.RecommendedNextAction
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/ai.js" asp-append-version="true"></script>
+}
