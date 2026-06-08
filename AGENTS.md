@@ -2,9 +2,9 @@
 
 ## Mission
 
-Build **ConduitAI**, an ASP.NET Core MVC portfolio project for real-estate lead intelligence and follow-up. The app should demonstrate C#, EF Core, SQLite, MVC architecture, JavaScript/jQuery, local AI integration, and practical business software design.
+Build and maintain **ConduitAI**, an ASP.NET Core MVC application for real-estate lead intelligence and follow-up. It is an internal CRM built on C#, EF Core, SQLite, server-rendered MVC with jQuery enhancement, and local AI integration via Ollama.
 
-`PLAN.md` is the main implementation guide. Follow it unless the user explicitly changes direction.
+This file and `CLAUDE.md` define scope, architecture, and operating rules. Follow them unless the user explicitly changes direction.
 
 ## Canonical Naming
 
@@ -19,7 +19,7 @@ Use `ConduitAI` in namespaces, UI copy, docs, seed data, tests, page titles, and
 - Free to develop.
 - Safe for a public repository.
 - Security-first implementation.
-- Single-developer, 4-day realistic scope.
+- Minimal scope, maintainable by a single developer.
 
 Do not add:
 
@@ -156,8 +156,8 @@ Useful test targets:
 
 Choose the simpler implementation that:
 
-- Matches `PLAN.md`
+- Matches the architecture and scope in this document and `CLAUDE.md`
 - Stays free/local
 - Reduces security risk
-- Demonstrates backend skill clearly
+- Keeps controllers thin and business logic in services
 - Avoids unnecessary infrastructure

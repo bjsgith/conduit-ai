@@ -4,9 +4,9 @@
 
 The project name is **ConduitAI**. Do not write it as "Conduit AI" in code, UI, documentation, comments, namespaces, page titles, README content, seed data, or tests unless quoting older material that is being corrected.
 
-ConduitAI is an AI-assisted lead intelligence and follow-up platform for real-estate sales teams. It should feel like a realistic internal business application, not a demo chatbot.
+ConduitAI is an AI-assisted lead intelligence and follow-up platform for real-estate sales teams. It is an internal business application, not a demo chatbot.
 
-Use `PLAN.md` as the primary product and architecture guide. This file adds operating rules for coding agents.
+This file and `AGENTS.md` define the product scope, architecture, and operating rules for the project. Treat them as the source of truth.
 
 ## Non-Negotiable Constraints
 
@@ -15,7 +15,7 @@ Use `PLAN.md` as the primary product and architecture guide. This file adds oper
 - Do not add authentication, user roles, Docker, microservices, Redis, queues, cloud infrastructure, or CI/CD pipelines.
 - Do not introduce paid APIs, paid SaaS dependencies, proprietary SDKs, hosted LLM services, or commercial-only assets.
 - Do not require secrets for the core app to run locally.
-- Keep the app realistic for a single developer to complete in roughly 4 days.
+- Keep scope minimal and maintainable by a single developer.
 
 ## Required Stack
 
@@ -89,7 +89,7 @@ AI-specific security:
 
 ## Cost and Licensing Rules
 
-- Use only free and open-source packages compatible with public portfolio use.
+- Use only free and open-source packages compatible with public repository use.
 - Prefer Microsoft/ASP.NET Core packages, EF Core SQLite, jQuery, and locally hosted Ollama.
 - Do not add paid UI kits, icon packs, hosted analytics, external enrichment APIs, hosted databases, or cloud-only services.
 - Seed data must be fictional.
@@ -97,7 +97,7 @@ AI-specific security:
 
 ## Product Scope
 
-Implement the features described in `PLAN.md`:
+Implement and maintain these features:
 
 - Lead CRUD
 - Lead timeline
@@ -118,7 +118,7 @@ Do not expand scope unless explicitly asked. Optional follow-up tables or extra 
 
 ## Development Workflow
 
-- Read `PLAN.md` before implementing feature work.
+- Read this document and `AGENTS.md` before implementing feature work.
 - Keep changes focused and small enough to review.
 - Add migrations when entity schema changes.
 - Add tests around services, filters, and AI parsing where practical.
@@ -129,8 +129,8 @@ Do not expand scope unless explicitly asked. Optional follow-up tables or extra 
 
 A change is not complete until:
 
-- It follows the architecture in `PLAN.md`.
+- It follows the architecture defined in this document.
 - It preserves the free/local/public-repo constraints.
 - It handles validation and expected failure paths.
 - It does not leak secrets or sensitive local data.
-- It can be explained clearly in an interview as backend business software design.
+- The build, migrations, and tests are consistent with the change.

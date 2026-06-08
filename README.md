@@ -1,8 +1,8 @@
 # ConduitAI
 
-ConduitAI is an ASP.NET Core MVC application for real-estate lead intelligence and follow-up. It is a compact internal CRM that demonstrates practical C# business software: lead records, timeline history, dashboard metrics, stored AI analysis, and meeting-note processing. AI runs locally through Ollama and is invoked only on explicit user actions.
+ConduitAI is an ASP.NET Core MVC application for real-estate lead intelligence and follow-up. It is an internal CRM covering lead records, timeline history, dashboard metrics, stored AI analysis, and meeting-note processing. AI runs locally through Ollama and is invoked only on explicit user actions.
 
-The architecture and product guide for this repository is [PLAN.md](PLAN.md).
+Scope, architecture, and contribution rules are documented in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md).
 
 ## Features
 
@@ -12,6 +12,13 @@ The architecture and product guide for this repository is [PLAN.md](PLAN.md).
 - **Stored AI lead analysis** — on demand, generate a summary, 0–100 lead score, urgency, buying intent, and recommended next action. Results are persisted, never regenerated on page load.
 - **Meeting notes assistant** — turn raw notes into a structured summary, key facts, risks, and a next action; optionally attach to a lead, which also records a timeline interaction.
 - **Dashboard** — total leads, new leads, high-priority leads, upcoming follow-ups, a recently-updated list, and a follow-up queue.
+
+## Engineering Highlights
+
+- **Local-first AI integration.** Lead analysis and meeting-note extraction run against a local Ollama model over a typed `HttpClient`, using a structured JSON response contract, tolerant parsing, a single parse-and-repair retry, and graceful degradation when the model is unavailable — partial output is never persisted.
+- **Defense-in-depth by default.** Anti-forgery on every POST, ViewModel binding to prevent over-posting, parameterized EF Core LINQ, Razor output encoding for untrusted user and model text, and loopback-only AI requests so lead data never leaves the machine.
+- **Clean MVC architecture.** Thin controllers over a focused service layer (lead, timeline, dashboard, AI analysis, meeting notes), with EF Core/SQLite persistence and migrations.
+- **Tested behavior.** xUnit coverage across the service layer, lead filtering, AI JSON parsing, and AI/meeting-note failure paths.
 
 ## Technology Stack
 
