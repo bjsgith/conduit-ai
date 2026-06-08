@@ -18,6 +18,7 @@ Scope, architecture, and contribution rules are documented in [CLAUDE.md](CLAUDE
 - **Local-first AI integration.** Lead analysis and meeting-note extraction run against a local Ollama model over a typed `HttpClient`, using a structured JSON response contract, tolerant parsing, a single parse-and-repair retry, and graceful degradation when the model is unavailable — partial output is never persisted.
 - **Defense-in-depth by default.** Anti-forgery on every POST, ViewModel binding to prevent over-posting, parameterized EF Core LINQ, Razor output encoding for untrusted user and model text, and loopback-only AI requests so lead data never leaves the machine.
 - **Clean MVC architecture.** Thin controllers over a focused service layer (lead, timeline, dashboard, AI analysis, meeting notes), with EF Core/SQLite persistence and migrations.
+- **Progressive enhancement with jQuery.** Pages render server-side and stay fully usable without heavy client logic; jQuery layers on the explicit, user-triggered AI analysis AJAX call (`ai.js`) and safe delete/confirmation flows (`site.js`), plus jQuery Validation Unobtrusive for client-side form checks — and AI output is inserted via `.text()`/DOM APIs, never as raw HTML.
 - **Tested behavior.** xUnit coverage across the service layer, lead filtering, AI JSON parsing, and AI/meeting-note failure paths.
 
 ## Technology Stack
