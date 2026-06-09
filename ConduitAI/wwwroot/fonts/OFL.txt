@@ -1,0 +1,12 @@
+These font files are redistributed under the SIL Open Font License, Version 1.1.
+
+- Fraunces — Copyright The Fraunces Project Authors (https://github.com/undercasetype/Fraunces)
+- Hanken Grotesk — Copyright The Hanken Grotesk Project Authors (https://github.com/hawkfalcon/Hanken-Grotesk)
+
+The SIL Open Font License (OFL) v1.1 permits free use, study, modification, and
+redistribution (including bundling with software) provided the fonts are not sold
+by themselves and any reserved font names are respected. Full license text:
+https://openfontlicense.org/open-font-license-official-text/
+
+Both families are self-hosted here so ConduitAI renders identically offline with
+no external font requests at runtime.

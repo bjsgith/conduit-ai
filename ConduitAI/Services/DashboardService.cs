@@ -54,6 +54,21 @@ public class DashboardService : IDashboardService
         var totalLeads = leads.Count;
         var newLeads = leads.Count(l => l.Status == LeadStatus.New);
 
+        bool IsActive(LeadStatus s) => s != LeadStatus.Closed && s != LeadStatus.Lost;
+        var activeLeads = leads.Count(l => IsActive(l.Status));
+        var pipelineValue = leads
+            .Where(l => IsActive(l.Status) && l.Budget.HasValue)
+            .Sum(l => l.Budget!.Value);
+
+        var scored = leads.Where(l => l.Latest != null).Select(l => l.Latest!.LeadScore).ToList();
+        var averageLeadScore = scored.Count > 0 ? (int)Math.Round(scored.Average()) : 0;
+
+        // Counts per lifecycle stage, kept in pipeline order for the distribution bar.
+        var byStatus = leads.GroupBy(l => l.Status).ToDictionary(g => g.Key, g => g.Count());
+        var pipeline = Enum.GetValues<LeadStatus>()
+            .Select(s => new PipelineStageViewModel { Status = s, Count = byStatus.GetValueOrDefault(s) })
+            .ToList();
+
         var highPriority = leads.Count(l =>
             l.Latest != null &&
             l.Status != LeadStatus.Closed &&
@@ -105,8 +120,12 @@ public class DashboardService : IDashboardService
             NewLeads = newLeads,
             HighPriorityLeads = highPriority,
             UpcomingFollowUps = followUps.Count,
+            ActiveLeads = activeLeads,
+            PipelineValue = pipelineValue,
+            AverageLeadScore = averageLeadScore,
             RecentLeads = recentLeads,
-            FollowUpQueue = followUpQueue
+            FollowUpQueue = followUpQueue,
+            Pipeline = pipeline
         };
     }
 }

@@ -7,6 +7,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(ViewData["Title"] != null ? ViewData["Title"] + " · ConduitAI" : "ConduitAI")</title>
+    <link rel="preload" href="~/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="~/fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
@@ -14,32 +16,44 @@
         <aside class="sidebar">
             <div class="brand">
                 <span class="brand-mark">C</span>
-                <span class="brand-name">ConduitAI</span>
+                <span class="brand-name">Conduit<b>AI</b></span>
             </div>
+
+            <div class="side-eyebrow">Workspace</div>
             <nav class="side-nav">
                 <a class="side-link @(currentController == "Home" ? "is-active" : "")"
                    asp-controller="Home" asp-action="Index">
-                    <span class="side-ico">▤</span> Dashboard
+                    <span class="side-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                    </span> Dashboard
                 </a>
                 <a class="side-link @(currentController == "Leads" ? "is-active" : "")"
                    asp-controller="Leads" asp-action="Index">
-                    <span class="side-ico">◷</span> Leads
+                    <span class="side-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20a5 5 0 0 0-10 0"/><circle cx="12" cy="8" r="4"/></svg>
+                    </span> Leads
                 </a>
                 <a class="side-link @(currentController == "MeetingNotes" ? "is-active" : "")"
                    asp-controller="MeetingNotes" asp-action="Create">
-                    <span class="side-ico">✎</span> Meeting Notes
+                    <span class="side-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h5"/></svg>
+                    </span> Meeting Notes
                 </a>
             </nav>
+
             <div class="side-foot">
-                <span class="side-tag">Lead intelligence</span>
-                <span class="side-sub">Local · AI-assisted</span>
+                <span class="side-tag"><span class="dot"></span> Lead intelligence</span>
+                <span class="side-sub">Local workspace · AI-assisted</span>
             </div>
         </aside>
 
         <div class="app-main">
             <header class="topbar">
                 <div class="topbar-title">@(ViewData["Title"] ?? "Dashboard")</div>
-                <a class="btn btn-primary" asp-controller="Leads" asp-action="Create">+ New Lead</a>
+                <a class="btn btn-primary" asp-controller="Leads" asp-action="Create">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    New Lead
+                </a>
             </header>
 
             <main class="content">

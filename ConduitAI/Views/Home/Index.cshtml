@@ -1,32 +1,141 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
+
+    var now = DateTime.Now;
+    var greeting = now.Hour < 12 ? "Good morning" : now.Hour < 17 ? "Good afternoon" : "Good evening";
+
+    // Compact currency for the pipeline-value metric (e.g. $4.2M, $850K).
+    static string Money(decimal v)
+    {
+        if (v >= 1_000_000m) return "$" + (v / 1_000_000m).ToString("0.#") + "M";
+        if (v >= 1_000m) return "$" + (v / 1_000m).ToString("0.#") + "K";
+        return "$" + v.ToString("0");
+    }
+
+    // Two-letter initials for the lead avatar chip.
+    static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        var first = char.ToUpperInvariant(parts[0][0]);
+        return parts.Length > 1 ? $"{first}{char.ToUpperInvariant(parts[^1][0])}" : first.ToString();
+    }
+
+    // Sequential pipeline ramp: estate green → brass → terracotta as a lead advances.
+    static string StageColor(ConduitAI.Models.Enums.LeadStatus s) => s switch
+    {
+        ConduitAI.Models.Enums.LeadStatus.New => "#2a7a64",
+        ConduitAI.Models.Enums.LeadStatus.Contacted => "#4f9a72",
+        ConduitAI.Models.Enums.LeadStatus.Qualified => "#7aa84f",
+        ConduitAI.Models.Enums.LeadStatus.TourScheduled => "#c79a4e",
+        ConduitAI.Models.Enums.LeadStatus.OfferPending => "#b07b1d",
+        ConduitAI.Models.Enums.LeadStatus.Closed => "#1f7a55",
+        ConduitAI.Models.Enums.LeadStatus.Lost => "#b1442f",
+        _ => "#948a7c"
+    };
+
+    var pipelineTotal = Model.Pipeline.Sum(p => p.Count);
 }
 
+<section class="hero reveal" style="animation-delay:.02s">
+    <div>
+        <div class="hero-eyebrow">@now.ToString("dddd, MMMM d")</div>
+        <h1>@greeting, <em>let's move deals</em></h1>
+        <p class="hero-sub">A live read on your book of business — pipeline health, priority leads, and the AI-surfaced follow-ups worth your attention today.</p>
+    </div>
+    <div class="hero-actions">
+        <a class="btn" asp-controller="MeetingNotes" asp-action="Create">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v5h5"/></svg>
+            Summarize notes
+        </a>
+        <a class="btn btn-primary" asp-controller="Leads" asp-action="Create">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New Lead
+        </a>
+    </div>
+</section>
+
 <div class="metrics">
-    <div class="metric accent">
-        <div class="metric-label">Total Leads</div>
+    <div class="metric accent reveal" style="animation-delay:.06s">
+        <div class="metric-top">
+            <span class="metric-label">Total Leads</span>
+            <span class="metric-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19a4 4 0 0 0-8 0"/><circle cx="12" cy="9" r="3"/><circle cx="12" cy="12" r="9"/></svg></span>
+        </div>
         <div class="metric-value num">@Model.TotalLeads</div>
+        <div class="metric-foot"><b>@Model.ActiveLeads</b> active · <b>@Model.NewLeads</b> new</div>
     </div>
-    <div class="metric">
-        <div class="metric-label">New Leads</div>
-        <div class="metric-value num">@Model.NewLeads</div>
+
+    <div class="metric brass reveal" style="animation-delay:.1s">
+        <div class="metric-top">
+            <span class="metric-label">Pipeline Value</span>
+            <span class="metric-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 9v10h14V9"/><path d="M9 19v-6h6v6"/></svg></span>
+        </div>
+        <div class="metric-value num">@Money(Model.PipelineValue)</div>
+        <div class="metric-foot">Active budget under management</div>
     </div>
-    <div class="metric warn">
-        <div class="metric-label">High Priority</div>
+
+    <div class="metric warn reveal" style="animation-delay:.14s">
+        <div class="metric-top">
+            <span class="metric-label">High Priority</span>
+            <span class="metric-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg></span>
+        </div>
         <div class="metric-value num">@Model.HighPriorityLeads</div>
+        <div class="metric-foot">Hot score or high urgency</div>
     </div>
-    <div class="metric good">
-        <div class="metric-label">Upcoming Follow-Ups</div>
+
+    <div class="metric good reveal" style="animation-delay:.18s">
+        <div class="metric-top">
+            <span class="metric-label">Follow-Ups Due</span>
+            <span class="metric-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></span>
+        </div>
         <div class="metric-value num">@Model.UpcomingFollowUps</div>
+        <div class="metric-foot">Avg AI score <b>@(Model.AverageLeadScore > 0 ? Model.AverageLeadScore.ToString() : "—")</b></div>
     </div>
 </div>
 
+<section class="card pipeline-card reveal" style="animation-delay:.22s">
+    <div class="card-head">
+        <h2>Pipeline Distribution</h2>
+        <a class="btn btn-sm btn-ghost" asp-controller="Leads" asp-action="Index">Open pipeline →</a>
+    </div>
+    <div class="card-body">
+        @if (pipelineTotal == 0)
+        {
+            <div class="empty-state">
+                <div class="big">No leads in the pipeline yet</div>
+                <div>Add your first lead to start tracking stages.</div>
+            </div>
+        }
+        else
+        {
+            <div class="pipeline-bar">
+                @foreach (var stage in Model.Pipeline.Where(p => p.Count > 0))
+                {
+                    <div class="pipeline-seg"
+                         style="flex-grow:@stage.Count; background:@StageColor(stage.Status)"
+                         title="@DisplayText.Humanize(stage.Status): @stage.Count"></div>
+                }
+            </div>
+            <div class="pipeline-legend">
+                @foreach (var stage in Model.Pipeline)
+                {
+                    <div class="pipeline-item">
+                        <span class="pipeline-swatch" style="background:@StageColor(stage.Status)"></span>
+                        <span class="pipeline-name">@DisplayText.Humanize(stage.Status)</span>
+                        <span class="pipeline-count num">@stage.Count</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
 <div class="grid grid-2">
-    <section class="card">
+    <section class="card reveal" style="animation-delay:.26s">
         <div class="card-head">
             <h2>Recently Updated</h2>
-            <a class="btn btn-sm btn-ghost" asp-controller="Leads" asp-action="Index">View all</a>
+            <a class="btn btn-sm btn-ghost" asp-controller="Leads" asp-action="Index">View all →</a>
         </div>
         @if (Model.RecentLeads.Count == 0)
         {
@@ -52,8 +161,13 @@
                         {
                             <tr>
                                 <td>
-                                    <a class="cell-name" asp-controller="Leads" asp-action="Details" asp-route-id="@lead.Id">@lead.Name</a>
-                                    <div class="cell-sub">@(string.IsNullOrWhiteSpace(lead.Location) ? "—" : lead.Location)</div>
+                                    <div class="lead-cell">
+                                        <span class="avatar">@Initials(lead.Name)</span>
+                                        <div>
+                                            <a class="cell-name" asp-controller="Leads" asp-action="Details" asp-route-id="@lead.Id">@lead.Name</a>
+                                            <div class="cell-sub">@(string.IsNullOrWhiteSpace(lead.Location) ? "—" : lead.Location)</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td><span class="badge status-@DisplayText.Slug(lead.Status)">@DisplayText.Humanize(lead.Status)</span></td>
                                 <td>
@@ -75,33 +189,32 @@
         }
     </section>
 
-    <section class="card">
+    <section class="card reveal" style="animation-delay:.3s">
         <div class="card-head">
             <h2>Follow-Up Queue</h2>
+            <span class="count-chip">@Model.FollowUpQueue.Count queued</span>
         </div>
-        <div class="card-body">
-            @if (Model.FollowUpQueue.Count == 0)
-            {
-                <div class="empty-state">
-                    <div class="big">Nothing queued</div>
-                    <div>Generate AI analysis on a lead to surface next actions.</div>
-                </div>
-            }
-            else
-            {
-                <div class="stack">
-                    @foreach (var item in Model.FollowUpQueue)
-                    {
-                        <div>
-                            <div class="ai-scoreline" style="margin-bottom:6px;">
-                                <a class="cell-name" asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId">@item.LeadName</a>
-                                <span class="badge lvl-@DisplayText.Slug(item.Urgency)">@DisplayText.Humanize(item.Urgency) urgency</span>
-                            </div>
-                            <div class="cell-sub">@item.RecommendedNextAction</div>
+        @if (Model.FollowUpQueue.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="big">Nothing queued</div>
+                <div>Generate AI analysis on a lead to surface next actions.</div>
+            </div>
+        }
+        else
+        {
+            <div class="queue">
+                @foreach (var item in Model.FollowUpQueue)
+                {
+                    <a class="queue-item" asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId">
+                        <div class="queue-top">
+                            <span class="cell-name">@item.LeadName</span>
+                            <span class="badge lvl-@DisplayText.Slug(item.Urgency)">@DisplayText.Humanize(item.Urgency)</span>
                         </div>
-                    }
-                </div>
-            }
-        </div>
+                        <div class="queue-action">@item.RecommendedNextAction</div>
+                    </a>
+                }
+            </div>
+        }
     </section>
 </div>
