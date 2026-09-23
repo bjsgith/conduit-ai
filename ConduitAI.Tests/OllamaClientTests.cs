@@ -3,6 +3,7 @@ using System.Text;
 using ConduitAI.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
 using Xunit;
 
 namespace ConduitAI.Tests;
@@ -75,6 +76,31 @@ public class OllamaClientTests
     }
 
     [Fact]
+    public async Task GenerateAsync_LimitsCallerToFiveRequestsPerMinute()
+    {
+        var handler = new SuccessHandler();
+        var client = NewClient(handler);
+
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.True((await client.GenerateAsync("prompt")).Success);
+        }
+
+        var limited = await client.GenerateAsync("prompt");
+
+        Assert.False(limited.Success);
+        Assert.Contains("at capacity", limited.ErrorMessage);
+        Assert.Equal(5, handler.CallCount);
+    }
+
+    [Fact]
+    public void PrimaryHandler_DisablesAutomaticRedirects()
+    {
+        using var handler = Assert.IsType<HttpClientHandler>(OllamaHttpClientPolicy.CreatePrimaryHandler());
+        Assert.False(handler.AllowAutoRedirect);
+    }
+
+    [Fact]
     public async Task GenerateAsync_Timeout_FailsSafely()
     {
         var handler = new DelayedHandler();
@@ -97,7 +123,9 @@ public class OllamaClientTests
         return new OllamaClient(
             http,
             Options.Create(options ?? new OllamaOptions { BaseUrl = "http://localhost:11434", Model = "test-model" }),
-            NullLogger<OllamaClient>.Instance);
+            NullLogger<OllamaClient>.Instance,
+            new AiRequestLimiter(),
+            new HttpContextAccessor());
     }
 
     private static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)
@@ -129,6 +157,17 @@ public class OllamaClientTests
         {
             await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             return JsonResponse("""{"response":"{}","done":true}""");
+        }
+    }
+
+    private sealed class SuccessHandler : HttpMessageHandler
+    {
+        public int CallCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromResult(JsonResponse("""{"response":"{}","done":true}"""));
         }
     }
 }

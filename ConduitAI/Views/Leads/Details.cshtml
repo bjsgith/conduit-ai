@@ -22,6 +22,7 @@
     </div>
     <div class="detail-actions">
         <a class="btn" asp-controller="MeetingNotes" asp-action="Create" asp-route-leadId="@lead.Id">Add Meeting Notes</a>
+        <a class="btn btn-brass" asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@lead.Id" asp-route-actionText="@Model.LatestAnalysis?.RecommendedNextAction">Schedule Follow-Up</a>
         <a class="btn" asp-controller="Leads" asp-action="Edit" asp-route-id="@lead.Id">Edit</a>
         <a class="btn btn-ghost" asp-controller="Leads" asp-action="Delete" asp-route-id="@lead.Id">Delete</a>
     </div>
@@ -48,18 +49,71 @@
         }
 
         <section class="card">
+            <div class="card-head">
+                <h3>Scheduled Follow-Ups</h3>
+                <a class="btn btn-sm btn-ghost" asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@lead.Id" asp-route-actionText="@Model.LatestAnalysis?.RecommendedNextAction">Schedule</a>
+            </div>
+            <div class="card-body">
+                @if (Model.FollowUps.Count == 0)
+                {
+                    <div class="empty-state compact-empty">
+                        <div class="big">No scheduled follow-ups</div>
+                        <div>Choose an action and due date to add one.</div>
+                    </div>
+                }
+                else
+                {
+                    <ul class="follow-up-list">
+                        @foreach (var item in Model.FollowUps)
+                        {
+                            var completed = item.CompletedAtUtc.HasValue;
+                            <li class="follow-up-row @(completed ? "is-complete" : "")">
+                                <div class="follow-up-copy">
+                                    <div class="follow-up-action">@item.ActionText</div>
+                                    <div class="cell-sub">
+                                        Due @item.DueAtUtc.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                        @if (completed)
+                                        {
+                                            <span> · Completed @item.CompletedAtUtc!.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="follow-up-actions">
+                                    @if (!completed)
+                                    {
+                                        <a class="btn btn-sm" asp-controller="FollowUps" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                                        <form method="post" asp-controller="FollowUps" asp-action="Complete" asp-route-id="@item.Id">
+                                            <button class="btn btn-sm btn-primary" type="submit">Complete</button>
+                                        </form>
+                                    }
+                                    <form method="post" asp-controller="FollowUps" asp-action="Delete" asp-route-id="@item.Id"
+                                          class="js-confirm" data-confirm="Delete this follow-up?">
+                                        <button class="btn btn-sm btn-ghost" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </section>
+
+        <section class="card">
             <div class="card-head"><h3>Timeline</h3></div>
             <div class="card-body">
                 <form method="post" asp-controller="Interactions" asp-action="Create">
                     <input type="hidden" asp-for="NewInteraction.LeadId" />
+                    <div asp-validation-summary="All" class="validation-summary-errors"></div>
                     <div class="form-grid">
                         <div class="field">
                             <label asp-for="NewInteraction.InteractionType"></label>
                             <select asp-for="NewInteraction.InteractionType" asp-items="Html.GetEnumSelectList<InteractionType>()"></select>
+                            <span asp-validation-for="NewInteraction.InteractionType" class="text-danger"></span>
                         </div>
                         <div class="field">
                             <label asp-for="NewInteraction.OccurredAt"></label>
                             <input asp-for="NewInteraction.OccurredAt" type="datetime-local" />
+                            <span asp-validation-for="NewInteraction.OccurredAt" class="text-danger"></span>
                         </div>
                         <div class="field full">
                             <label asp-for="NewInteraction.Notes"></label>

@@ -47,6 +47,18 @@ public class ViewModelValidationTests
         Assert.False(IsValid(form));
     }
 
+    [Fact]
+    public void RequiredForms_RejectWhitespaceOnlyValues()
+    {
+        var lead = new LeadFormViewModel { Name = "   ", LeadSource = LeadSource.Referral };
+        var interaction = new InteractionFormViewModel { LeadId = 1, Notes = " \t " };
+        var meetingNotes = new MeetingNotesFormViewModel { RawNotes = "          " };
+
+        Assert.False(IsValid(lead));
+        Assert.False(IsValid(interaction));
+        Assert.False(IsValid(meetingNotes));
+    }
+
     private static bool IsValid(object model)
     {
         var results = new List<ValidationResult>();

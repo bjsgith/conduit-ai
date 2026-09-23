@@ -47,6 +47,14 @@ public class SqliteIntegrationTests
         fixture.Db.MeetingNotes.AddRange(
             Note(lead.Id, "Attached note"),
             Note(null, "Standalone note"));
+        fixture.Db.LeadFollowUps.Add(new LeadFollowUp
+        {
+            LeadId = lead.Id,
+            ActionText = "Call after close.",
+            DueAtUtc = now,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
         await fixture.Db.SaveChangesAsync();
 
         var svc = NewLeadService(fixture.Db);
@@ -57,6 +65,7 @@ public class SqliteIntegrationTests
         Assert.Single(notes);
         Assert.Null(notes[0].LeadId);
         Assert.Equal("Standalone note", notes[0].RawNotes);
+        Assert.Empty(await fixture.Db.LeadFollowUps.ToListAsync());
     }
 
     [Fact]
@@ -73,6 +82,15 @@ public class SqliteIntegrationTests
             UpdatedAt = now
         };
         fixture.Db.Leads.Add(lead);
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.LeadFollowUps.Add(new LeadFollowUp
+        {
+            LeadId = lead.Id,
+            ActionText = "Call today.",
+            DueAtUtc = now,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
         await fixture.Db.SaveChangesAsync();
         fixture.Db.LeadAnalyses.Add(new LeadAnalysis
         {
@@ -94,6 +112,53 @@ public class SqliteIntegrationTests
         Assert.Single(list.Leads);
         Assert.Equal(1, dashboard.HighPriorityLeads);
         Assert.Single(dashboard.FollowUpQueue);
+        Assert.Equal(1, dashboard.UpcomingFollowUps);
+    }
+
+    [Fact]
+    public async Task Migrate_CreatesFollowUpDueIndex()
+    {
+        using var fixture = await SqliteDbFixture.CreateAsync();
+        var connection = fixture.Db.Database.GetDbConnection();
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA index_list('LeadFollowUps')";
+        await using var reader = await command.ExecuteReaderAsync();
+        var indexNames = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            indexNames.Add(reader.GetString(1));
+        }
+
+        Assert.Contains(indexNames, name => name.Contains("CompletedAtUtc", StringComparison.Ordinal));
+        Assert.Contains(indexNames, name => name.Contains("LeadId", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AddFollowUpMigration_PreservesRecordsInAnExistingDatabase()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+        await using var db = new AppDbContext(options);
+        await db.Database.OpenConnectionAsync();
+        await db.Database.MigrateAsync("20260605075010_CascadeMeetingNotesOnLeadDelete");
+
+        var lead = new Lead
+        {
+            Name = "Existing SQLite Lead",
+            LeadSource = LeadSource.Referral,
+            Status = LeadStatus.Qualified,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Leads.Add(lead);
+        await db.SaveChangesAsync();
+
+        await db.Database.MigrateAsync();
+
+        Assert.Equal("Existing SQLite Lead", (await db.Leads.AsNoTracking().SingleAsync()).Name);
+        Assert.Contains("20260923192235_AddLeadFollowUps", await db.Database.GetAppliedMigrationsAsync());
     }
 
     private static LeadService NewLeadService(AppDbContext db) =>
