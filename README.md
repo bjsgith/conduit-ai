@@ -1,4 +1,6 @@
-# ConduitAI
+<h1 align="center">
+  <img src="assets/conduitai-logo.svg" alt="ConduitAI logo">
+</h1>
 
 ConduitAI is an ASP.NET Core MVC application for real-estate lead intelligence and follow-up. It is an internal CRM covering lead records, timeline history, dashboard metrics, stored AI analysis, and meeting-note processing. AI runs locally through Ollama and is invoked only on explicit user actions.
 
