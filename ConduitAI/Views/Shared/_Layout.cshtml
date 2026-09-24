@@ -50,6 +50,17 @@
         <div class="app-main">
             <header class="topbar">
                 <div class="topbar-title">@(ViewData["Title"] ?? "Dashboard")</div>
+                <details class="mobile-nav">
+                    <summary aria-label="Open workspace navigation">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        <span>Menu</span>
+                    </summary>
+                    <nav class="mobile-nav-links" aria-label="Workspace">
+                        <a class="@(currentController == "Home" ? "is-active" : "")" asp-controller="Home" asp-action="Index">Dashboard</a>
+                        <a class="@(currentController == "Leads" ? "is-active" : "")" asp-controller="Leads" asp-action="Index">Leads</a>
+                        <a class="@(currentController == "MeetingNotes" ? "is-active" : "")" asp-controller="MeetingNotes" asp-action="Create">Meeting Notes</a>
+                    </nav>
+                </details>
                 <a class="btn btn-primary" asp-controller="Leads" asp-action="Create">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                     New Lead

@@ -40,6 +40,19 @@ public class MeetingNotesService : IMeetingNotesService
     public async Task<AiOperationResult<MeetingNoteSummaryViewModel>> CreateAsync(
         MeetingNotesFormViewModel form, CancellationToken ct = default)
     {
+        var normalizedNotes = form.RawNotes?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedNotes) || normalizedNotes.Length < 10)
+        {
+            return AiOperationResult<MeetingNoteSummaryViewModel>.Fail(
+                "Meeting notes must contain at least 10 non-whitespace characters.");
+        }
+
+        if (normalizedNotes.Length > 20_000)
+        {
+            return AiOperationResult<MeetingNoteSummaryViewModel>.Fail(
+                "Meeting notes must be 20000 characters or fewer.");
+        }
+
         Lead? lead = null;
         if (form.LeadId.HasValue)
         {
@@ -50,7 +63,7 @@ public class MeetingNotesService : IMeetingNotesService
             }
         }
 
-        var prompt = _promptBuilder.BuildMeetingNotesPrompt(form.RawNotes, lead);
+        var prompt = _promptBuilder.BuildMeetingNotesPrompt(normalizedNotes, lead);
 
         var parsed = await GenerateAndParseAsync(prompt, ct);
         if (!parsed.Success || parsed.Value is null)
@@ -65,7 +78,7 @@ public class MeetingNotesService : IMeetingNotesService
         var note = new MeetingNote
         {
             LeadId = form.LeadId,
-            RawNotes = form.RawNotes.Trim(),
+            RawNotes = normalizedNotes,
             StructuredSummary = result.StructuredSummary,
             KeyFactsJson = JsonSerializer.Serialize(result.KeyFacts),
             RisksJson = JsonSerializer.Serialize(result.Risks),

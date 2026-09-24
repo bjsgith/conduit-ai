@@ -6,10 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ConduitAI.Services;
 
-/// <summary>
-/// Builds dashboard metrics and lists entirely from stored data. No AI calls
-/// are made here; it reads the latest stored analysis per lead.
-/// </summary>
+/// <summary>Builds compact dashboard metrics from persisted CRM data.</summary>
 public class DashboardService : IDashboardService
 {
     private const int HighPriorityScoreThreshold = 75;
@@ -18,16 +15,57 @@ public class DashboardService : IDashboardService
 
     private readonly AppDbContext _db;
 
-    public DashboardService(AppDbContext db)
-    {
-        _db = db;
-    }
+    public DashboardService(AppDbContext db) => _db = db;
 
     public async Task<DashboardViewModel> GetDashboardAsync()
     {
-        // Project each lead with its latest analysis once, then compute in memory.
-        var leads = await _db.Leads
+        var totalLeads = await _db.Leads.CountAsync();
+        var newLeads = await _db.Leads.CountAsync(l => l.Status == LeadStatus.New);
+        var activeLeadsQuery = _db.Leads.Where(l => l.Status != LeadStatus.Closed && l.Status != LeadStatus.Lost);
+        var activeLeads = await activeLeadsQuery.CountAsync();
+        var pipelineValue = await activeLeadsQuery.SumAsync(l => l.Budget ?? 0m);
+
+        var highPriorityLeads = await activeLeadsQuery.CountAsync(l =>
+            l.Analyses
+                .OrderByDescending(a => a.GeneratedAt)
+                .ThenByDescending(a => a.Id)
+                .Select(a => a.LeadScore)
+                .FirstOrDefault() >= HighPriorityScoreThreshold
+            || l.Analyses
+                .OrderByDescending(a => a.GeneratedAt)
+                .ThenByDescending(a => a.Id)
+                .Select(a => a.UrgencyLevel)
+                .FirstOrDefault() == UrgencyLevel.High);
+
+        var latestScores = _db.Leads
+            .Select(l => l.Analyses
+                .OrderByDescending(a => a.GeneratedAt)
+                .ThenByDescending(a => a.Id)
+                .Select(a => (int?)a.LeadScore)
+                .FirstOrDefault())
+            .Where(score => score.HasValue);
+        var scoredLeadCount = await latestScores.CountAsync();
+        var averageLeadScore = scoredLeadCount == 0
+            ? 0
+            : (int)Math.Round(await latestScores.AverageAsync(score => (double)score!.Value));
+
+        var byStatus = await _db.Leads
+            .GroupBy(l => l.Status)
+            .Select(group => new { Status = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(group => group.Status, group => group.Count);
+        var pipeline = Enum.GetValues<LeadStatus>()
+            .Select(status => new PipelineStageViewModel
+            {
+                Status = status,
+                Count = byStatus.GetValueOrDefault(status)
+            })
+            .ToList();
+
+        var recentLeads = await _db.Leads
             .AsNoTracking()
+            .OrderByDescending(l => l.UpdatedAt)
+            .ThenByDescending(l => l.Id)
+            .Take(RecentLeadsCount)
             .Select(l => new
             {
                 l.Id,
@@ -40,52 +78,9 @@ public class DashboardService : IDashboardService
                 Latest = l.Analyses
                     .OrderByDescending(a => a.GeneratedAt)
                     .ThenByDescending(a => a.Id)
-                    .Select(a => new
-                    {
-                        a.LeadScore,
-                        a.UrgencyLevel,
-                        a.RecommendedNextAction,
-                        a.GeneratedAt
-                    })
+                    .Select(a => new { a.LeadScore, a.UrgencyLevel })
                     .FirstOrDefault()
             })
-            .ToListAsync();
-
-        var totalLeads = leads.Count;
-        var newLeads = leads.Count(l => l.Status == LeadStatus.New);
-
-        bool IsActive(LeadStatus s) => s != LeadStatus.Closed && s != LeadStatus.Lost;
-        var activeLeads = leads.Count(l => IsActive(l.Status));
-        var pipelineValue = leads
-            .Where(l => IsActive(l.Status) && l.Budget.HasValue)
-            .Sum(l => l.Budget!.Value);
-
-        var scored = leads.Where(l => l.Latest != null).Select(l => l.Latest!.LeadScore).ToList();
-        var averageLeadScore = scored.Count > 0 ? (int)Math.Round(scored.Average()) : 0;
-
-        // Counts per lifecycle stage, kept in pipeline order for the distribution bar.
-        var byStatus = leads.GroupBy(l => l.Status).ToDictionary(g => g.Key, g => g.Count());
-        var pipeline = Enum.GetValues<LeadStatus>()
-            .Select(s => new PipelineStageViewModel { Status = s, Count = byStatus.GetValueOrDefault(s) })
-            .ToList();
-
-        var highPriority = leads.Count(l =>
-            l.Latest != null &&
-            l.Status != LeadStatus.Closed &&
-            l.Status != LeadStatus.Lost &&
-            (l.Latest.LeadScore >= HighPriorityScoreThreshold || l.Latest.UrgencyLevel == UrgencyLevel.High));
-
-        var followUps = leads
-            .Where(l =>
-                l.Latest != null &&
-                !string.IsNullOrWhiteSpace(l.Latest.RecommendedNextAction) &&
-                l.Status != LeadStatus.Closed &&
-                l.Status != LeadStatus.Lost)
-            .ToList();
-
-        var recentLeads = leads
-            .OrderByDescending(l => l.UpdatedAt)
-            .Take(RecentLeadsCount)
             .Select(l => new LeadRowViewModel
             {
                 Id = l.Id,
@@ -95,31 +90,36 @@ public class DashboardService : IDashboardService
                 Status = l.Status,
                 Budget = l.Budget,
                 UpdatedAt = l.UpdatedAt,
-                LatestLeadScore = l.Latest?.LeadScore,
-                LatestUrgency = l.Latest?.UrgencyLevel
+                LatestLeadScore = l.Latest != null ? l.Latest.LeadScore : (int?)null,
+                LatestUrgency = l.Latest != null ? l.Latest.UrgencyLevel : (UrgencyLevel?)null
             })
-            .ToList();
+            .ToListAsync();
 
-        var followUpQueue = followUps
-            .OrderByDescending(l => l.Latest!.UrgencyLevel)
-            .ThenByDescending(l => l.Latest!.GeneratedAt)
+        var dueBeforeUtc = DateTime.UtcNow.AddDays(7);
+        var dueFollowUpsQuery = _db.LeadFollowUps
+            .AsNoTracking()
+            .Where(f => f.CompletedAtUtc == null && f.DueAtUtc <= dueBeforeUtc);
+        var upcomingFollowUps = await dueFollowUpsQuery.CountAsync();
+        var followUpQueue = await dueFollowUpsQuery
+            .OrderBy(f => f.DueAtUtc)
+            .ThenBy(f => f.Id)
             .Take(FollowUpQueueCount)
-            .Select(l => new FollowUpItemViewModel
+            .Select(f => new FollowUpItemViewModel
             {
-                LeadId = l.Id,
-                LeadName = l.Name,
-                RecommendedNextAction = l.Latest!.RecommendedNextAction,
-                Urgency = l.Latest!.UrgencyLevel,
-                GeneratedAt = l.Latest!.GeneratedAt
+                Id = f.Id,
+                LeadId = f.LeadId,
+                LeadName = f.Lead.Name,
+                ActionText = f.ActionText,
+                DueAtUtc = f.DueAtUtc
             })
-            .ToList();
+            .ToListAsync();
 
         return new DashboardViewModel
         {
             TotalLeads = totalLeads,
             NewLeads = newLeads,
-            HighPriorityLeads = highPriority,
-            UpcomingFollowUps = followUps.Count,
+            HighPriorityLeads = highPriorityLeads,
+            UpcomingFollowUps = upcomingFollowUps,
             ActiveLeads = activeLeads,
             PipelineValue = pipelineValue,
             AverageLeadScore = averageLeadScore,

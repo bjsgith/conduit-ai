@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using ConduitAI.Services.Ai;
 using ConduitAI.Services.Interfaces;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
 
 namespace ConduitAI.Services;
 
@@ -20,13 +21,22 @@ public class OllamaClient : IOllamaClient
     private readonly ILogger<OllamaClient> _logger;
     private readonly bool _hasSafeLocalBaseUrl;
     private readonly string _baseUrlDescription;
+    private readonly AiRequestLimiter _requestLimiter;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-    public OllamaClient(HttpClient http, IOptions<OllamaOptions> options, ILogger<OllamaClient> logger)
+    public OllamaClient(
+        HttpClient http,
+        IOptions<OllamaOptions> options,
+        ILogger<OllamaClient> logger,
+        AiRequestLimiter requestLimiter,
+        IHttpContextAccessor httpContextAccessor)
     {
         _options = options.Value;
         _logger = logger;
+        _requestLimiter = requestLimiter;
+        _httpContextAccessor = httpContextAccessor;
         _http = http;
         _http.Timeout = TimeSpan.FromSeconds(Math.Clamp(_options.TimeoutSeconds, 1, 600));
 
@@ -59,6 +69,13 @@ public class OllamaClient : IOllamaClient
 
         try
         {
+            var clientKey = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "local";
+            using var lease = await _requestLimiter.AcquireAsync(clientKey, ct);
+            if (!lease.IsAcquired)
+            {
+                return OllamaResult.Fail("AI is at capacity for this local user. Wait a moment and try again.");
+            }
+
             using var response = await _http.PostAsJsonAsync("/api/generate", request, JsonOpts, ct);
 
             if (!response.IsSuccessStatusCode)

@@ -12,5 +12,6 @@ public class LeadDetailsViewModel
     public AiAnalysisViewModel? LatestAnalysis { get; set; }
     public IReadOnlyList<LeadInteraction> Interactions { get; set; } = new List<LeadInteraction>();
     public IReadOnlyList<MeetingNoteSummaryViewModel> MeetingNotes { get; set; } = new List<MeetingNoteSummaryViewModel>();
+    public IReadOnlyList<LeadFollowUpViewModel> FollowUps { get; set; } = new List<LeadFollowUpViewModel>();
     public InteractionFormViewModel NewInteraction { get; set; } = new();
 }
