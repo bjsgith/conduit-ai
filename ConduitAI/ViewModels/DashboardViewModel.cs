@@ -30,15 +30,15 @@ public class DashboardViewModel
 }
 
 /// <summary>
-/// A single follow-up queue row derived from a lead's latest AI recommendation.
+/// A scheduled follow-up due now or during the next seven days.
 /// </summary>
 public class FollowUpItemViewModel
 {
+    public int Id { get; set; }
     public int LeadId { get; set; }
     public string LeadName { get; set; } = string.Empty;
-    public string RecommendedNextAction { get; set; } = string.Empty;
-    public UrgencyLevel Urgency { get; set; }
-    public DateTime GeneratedAt { get; set; }
+    public string ActionText { get; set; } = string.Empty;
+    public DateTime DueAtUtc { get; set; }
 }
 
 /// <summary>

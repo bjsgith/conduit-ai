@@ -7,10 +7,14 @@ namespace ConduitAI.Controllers;
 public class InteractionsController : Controller
 {
     private readonly ITimelineService _timeline;
+    private readonly ILeadService _leads;
+    private readonly IFollowUpService _followUps;
 
-    public InteractionsController(ITimelineService timeline)
+    public InteractionsController(ITimelineService timeline, ILeadService leads, IFollowUpService followUps)
     {
         _timeline = timeline;
+        _leads = leads;
+        _followUps = followUps;
     }
 
     // POST /Interactions/Create
@@ -20,8 +24,7 @@ public class InteractionsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["FlashError"] = "Could not add the interaction. Please check the form and try again.";
-            return RedirectToAction("Details", "Leads", new { id = form.LeadId });
+            return await RedisplayLeadAsync(form);
         }
 
         var added = await _timeline.AddInteractionAsync(form);
@@ -32,6 +35,20 @@ public class InteractionsController : Controller
 
         TempData["Flash"] = "Interaction added to the timeline.";
         return RedirectToAction("Details", "Leads", new { id = form.LeadId });
+    }
+
+    private async Task<IActionResult> RedisplayLeadAsync(InteractionFormViewModel form)
+    {
+        var details = await _leads.GetDetailsAsync(form.LeadId);
+        if (details is null)
+        {
+            return NotFound();
+        }
+
+        details.NewInteraction = form;
+        details.FollowUps = await _followUps.GetForLeadAsync(form.LeadId);
+        ViewData["Title"] = details.Lead.Name;
+        return View("~/Views/Leads/Details.cshtml", details);
     }
 
     // POST /Interactions/Delete/5

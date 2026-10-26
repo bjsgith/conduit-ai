@@ -22,13 +22,12 @@
 
 :root {
     /* Warm paper neutrals */
-    --bg: #efe9e0;
-    --bg-tint: #e7dfd3;
+    --bg: #fffdf9;
     --surface: #fffdf9;
     --surface-2: #f8f3ea;
     --ink: #1f1b16;
     --ink-soft: #5b5349;
-    --ink-mut: #948a7c;
+    --ink-mut: #756b5f;
     --line: #e6ddd0;
     --line-strong: #d8cdbc;
 
@@ -70,6 +69,8 @@
 }
 
 * { box-sizing: border-box; }
+
+:focus-visible { outline: 3px solid #b07b1d; outline-offset: 3px; }
 
 html, body {
     margin: 0;
@@ -166,6 +167,14 @@ a:hover { text-decoration: underline; }
     position: sticky; top: 0; z-index: 5;
 }
 .topbar-title { font-family: var(--font-display); font-size: 19px; font-weight: 560; letter-spacing: -.2px; }
+.mobile-nav { display: none; position: relative; }
+.mobile-nav summary { list-style: none; cursor: pointer; }
+.mobile-nav summary::-webkit-details-marker { display: none; }
+.mobile-nav summary { display: inline-flex; align-items: center; gap: 6px; padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-weight: 600; }
+.mobile-nav summary svg { width: 17px; height: 17px; }
+.mobile-nav-links { position: absolute; top: calc(100% + 8px); left: 0; min-width: 180px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow); }
+.mobile-nav-links a { display: block; padding: 10px 11px; border-radius: 6px; color: var(--ink); font-weight: 600; }
+.mobile-nav-links a:hover, .mobile-nav-links a.is-active { background: var(--accent-soft); text-decoration: none; }
 
 .content { padding: 30px 32px 56px; max-width: 1240px; width: 100%; }
 
@@ -358,6 +367,17 @@ a.cell-name:hover { color: var(--estate); }
 .queue-action::before {
     content: ""; flex-shrink: 0; width: 3px; border-radius: 3px; background: var(--brass-line); align-self: stretch;
 }
+.follow-up-due { color: var(--ink-mut); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.follow-up-list { list-style: none; margin: 0; padding: 0; }
+.follow-up-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.follow-up-row:first-child { padding-top: 0; }
+.follow-up-row:last-child { padding-bottom: 0; border-bottom: 0; }
+.follow-up-row.is-complete .follow-up-action { color: var(--ink-soft); }
+.follow-up-copy { min-width: 0; }
+.follow-up-action { color: var(--ink); font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.follow-up-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex-shrink: 0; }
+.follow-up-actions form { display: inline-flex; }
+.compact-empty { padding: 22px 12px; }
 
 /* ---------- Forms ---------- */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
@@ -468,6 +488,29 @@ a.cell-name:hover { color: var(--estate); }
 .empty-state .big { font-family: var(--font-display); font-size: 17px; font-weight: 540; color: var(--ink-soft); margin-bottom: 5px; }
 
 .divider { height: 1px; background: var(--line); margin: 18px 0; border: 0; }
+
+.pagination { display: flex; justify-content: center; margin-top: 16px; color: var(--ink-soft); }
+.pagination form { display: flex; align-items: center; gap: 14px; }
+
+@media (max-width: 760px) {
+    .app-shell { display: block; }
+    .sidebar { display: none; }
+    .topbar { padding: 11px 16px; gap: 10px; }
+    .topbar-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mobile-nav { display: block; order: -1; }
+    .content { padding: 22px 16px 42px; }
+}
+
+@media (max-width: 520px) {
+    .topbar { padding: 10px 12px; }
+    .topbar .btn-primary { padding: 8px 10px; }
+    .topbar .btn-primary svg { display: none; }
+    .content { padding: 18px 12px 36px; }
+    .detail-actions { flex-wrap: wrap; }
+    .follow-up-row { flex-direction: column; }
+    .follow-up-actions { justify-content: flex-start; }
+    .pagination form { gap: 8px; }
+}
 
 /* ---------- Entrance choreography ---------- */
 @keyframes rise {

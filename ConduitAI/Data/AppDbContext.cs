@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<LeadInteraction> LeadInteractions => Set<LeadInteraction>();
     public DbSet<LeadAnalysis> LeadAnalyses => Set<LeadAnalysis>();
     public DbSet<MeetingNote> MeetingNotes => Set<MeetingNote>();
+    public DbSet<LeadFollowUp> LeadFollowUps => Set<LeadFollowUp>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,11 @@ public class AppDbContext : DbContext
                   .WithOne(m => m.Lead)
                   .HasForeignKey(m => m.LeadId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(l => l.FollowUps)
+                  .WithOne(f => f.Lead)
+                  .HasForeignKey(f => f.LeadId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<LeadInteraction>(entity =>
@@ -62,6 +68,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<MeetingNote>(entity =>
         {
             entity.HasIndex(m => m.CreatedAt);
+        });
+
+        modelBuilder.Entity<LeadFollowUp>(entity =>
+        {
+            entity.Property(f => f.ActionText).HasMaxLength(500);
+            entity.HasIndex(f => new { f.CompletedAtUtc, f.DueAtUtc });
+            entity.HasIndex(f => new { f.LeadId, f.CompletedAtUtc, f.DueAtUtc });
         });
     }
 }

@@ -15,7 +15,7 @@ namespace ConduitAI.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.27");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("ConduitAI.Models.Lead", b =>
                 {
@@ -124,6 +124,41 @@ namespace ConduitAI.Migrations
                     b.ToTable("LeadAnalyses");
                 });
 
+            modelBuilder.Entity("ConduitAI.Models.LeadFollowUp", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ActionText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DueAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LeadId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompletedAtUtc", "DueAtUtc");
+
+                    b.HasIndex("LeadId", "CompletedAtUtc", "DueAtUtc");
+
+                    b.ToTable("LeadFollowUps");
+                });
+
             modelBuilder.Entity("ConduitAI.Models.LeadInteraction", b =>
                 {
                     b.Property<int>("Id")
@@ -223,6 +258,17 @@ namespace ConduitAI.Migrations
                     b.Navigation("Lead");
                 });
 
+            modelBuilder.Entity("ConduitAI.Models.LeadFollowUp", b =>
+                {
+                    b.HasOne("ConduitAI.Models.Lead", "Lead")
+                        .WithMany("FollowUps")
+                        .HasForeignKey("LeadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lead");
+                });
+
             modelBuilder.Entity("ConduitAI.Models.LeadInteraction", b =>
                 {
                     b.HasOne("ConduitAI.Models.Lead", "Lead")
@@ -247,6 +293,8 @@ namespace ConduitAI.Migrations
             modelBuilder.Entity("ConduitAI.Models.Lead", b =>
                 {
                     b.Navigation("Analyses");
+
+                    b.Navigation("FollowUps");
 
                     b.Navigation("Interactions");
 

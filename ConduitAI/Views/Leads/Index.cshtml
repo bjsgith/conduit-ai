@@ -12,6 +12,7 @@
 </div>
 
 <form method="get" asp-controller="Leads" asp-action="Index" class="filterbar">
+    <input type="hidden" name="Filter.Page" value="1" />
     <div class="field">
         <label asp-for="Filter.Search">Search</label>
         <input asp-for="Filter.Search" placeholder="Name, email, notes…" />
@@ -48,3 +49,19 @@
 <section class="card">
     @await Html.PartialAsync("_LeadTable", Model.Leads)
 </section>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="pagination" aria-label="Lead result pages">
+        <form method="get" asp-controller="Leads" asp-action="Index">
+            <input type="hidden" name="Filter.Search" value="@Model.Filter.Search" />
+            <input type="hidden" name="Filter.Status" value="@Model.Filter.Status" />
+            <input type="hidden" name="Filter.LeadSource" value="@Model.Filter.LeadSource" />
+            <input type="hidden" name="Filter.MinLeadScore" value="@Model.Filter.MinLeadScore" />
+            <input type="hidden" name="Filter.Location" value="@Model.Filter.Location" />
+            <button class="btn btn-sm" type="submit" name="Filter.Page" value="@(Model.Filter.Page - 1)" disabled="@(Model.Filter.Page <= 1)">Previous</button>
+            <span aria-live="polite">Page @Model.Filter.Page of @Model.TotalPages</span>
+            <button class="btn btn-sm" type="submit" name="Filter.Page" value="@(Model.Filter.Page + 1)" disabled="@(Model.Filter.Page >= Model.TotalPages)">Next</button>
+        </form>
+    </nav>
+}

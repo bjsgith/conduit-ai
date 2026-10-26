@@ -31,6 +31,11 @@ public class TimelineService : ITimelineService
 
     public async Task<bool> AddInteractionAsync(InteractionFormViewModel form)
     {
+        if (string.IsNullOrWhiteSpace(form.Notes))
+        {
+            throw new ArgumentException("Interaction notes are required.", nameof(form));
+        }
+
         var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == form.LeadId);
         if (lead is null)
         {

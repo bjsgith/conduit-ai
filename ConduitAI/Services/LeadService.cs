@@ -12,6 +12,7 @@ namespace ConduitAI.Services;
 /// </summary>
 public class LeadService : ILeadService
 {
+    private const int PageSize = 25;
     private readonly AppDbContext _db;
     private readonly IAiAnalysisService _aiAnalysis;
     private readonly IMeetingNotesService _meetingNotes;
@@ -71,8 +72,15 @@ public class LeadService : ILeadService
             projected = projected.Where(x => x.Latest != null && x.Latest.LeadScore >= min);
         }
 
+        var totalCount = await projected.CountAsync();
+        var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
+        filter.Page = Math.Clamp(filter.Page, 1, totalPages);
+
         var rows = await projected
             .OrderByDescending(x => x.Lead.UpdatedAt)
+            .ThenByDescending(x => x.Lead.Id)
+            .Skip((filter.Page - 1) * PageSize)
+            .Take(PageSize)
             .Select(x => new LeadRowViewModel
             {
                 Id = x.Lead.Id,
@@ -91,7 +99,8 @@ public class LeadService : ILeadService
         {
             Filter = filter,
             Leads = rows,
-            TotalCount = rows.Count
+            TotalCount = totalCount,
+            PageSize = PageSize
         };
     }
 
@@ -151,6 +160,11 @@ public class LeadService : ILeadService
 
     public async Task<int> CreateAsync(LeadFormViewModel form)
     {
+        if (string.IsNullOrWhiteSpace(form.Name))
+        {
+            throw new ArgumentException("A lead name is required.", nameof(form));
+        }
+
         var now = DateTime.UtcNow;
         var lead = new Lead
         {
@@ -173,6 +187,11 @@ public class LeadService : ILeadService
 
     public async Task<bool> UpdateAsync(LeadFormViewModel form)
     {
+        if (string.IsNullOrWhiteSpace(form.Name))
+        {
+            throw new ArgumentException("A lead name is required.", nameof(form));
+        }
+
         var lead = await _db.Leads.FirstOrDefaultAsync(l => l.Id == form.Id);
         if (lead is null)
         {

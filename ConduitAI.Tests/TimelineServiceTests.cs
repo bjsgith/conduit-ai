@@ -54,6 +54,23 @@ public class TimelineServiceTests
     }
 
     [Fact]
+    public async Task AddInteraction_RejectsWhitespaceNotesAfterNormalization()
+    {
+        using var db = TestDb.Create();
+        var lead = new Lead { Name = "Lead", LeadSource = LeadSource.Other, Status = LeadStatus.New, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        db.Leads.Add(lead);
+        await db.SaveChangesAsync();
+        var service = new TimelineService(db);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.AddInteractionAsync(new InteractionFormViewModel
+        {
+            LeadId = lead.Id,
+            InteractionType = InteractionType.Note,
+            Notes = "  \t "
+        }));
+    }
+
+    [Fact]
     public async Task GetForLead_OrdersNewestFirst()
     {
         using var db = TestDb.Create();

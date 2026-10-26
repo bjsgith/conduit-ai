@@ -66,10 +66,43 @@ public class MeetingNotesServiceTests
         using var db = TestDb.Create();
         var svc = NewService(db, new FakeOllamaClient(OllamaResult.Fail("Ollama is not available.")));
 
-        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Notes." });
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Meeting notes." });
 
         Assert.False(result.Success);
         Assert.Equal(0, await db.MeetingNotes.CountAsync());
+    }
+
+    [Theory]
+    [InlineData("          ")]
+    [InlineData("        12345678       ")]
+    [InlineData("123456789")]
+    [InlineData("A        B")]
+    public async Task CreateAsync_RejectsNotesWithFewerThanTenNonWhitespaceCharacters_WithoutCallingOllama(string rawNotes)
+    {
+        using var db = TestDb.Create();
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(ValidJson));
+        var service = NewService(db, ollama);
+
+        var result = await service.CreateAsync(new MeetingNotesFormViewModel { RawNotes = rawNotes });
+
+        Assert.False(result.Success);
+        Assert.Contains("at least 10", result.ErrorMessage);
+        Assert.Equal(0, ollama.CallCount);
+        Assert.Empty(db.MeetingNotes);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AcceptsExactlyTenNonWhitespaceCharacters()
+    {
+        using var db = TestDb.Create();
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(ValidJson));
+        var service = NewService(db, ollama);
+
+        var result = await service.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "12345 67890" });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, ollama.CallCount);
+        Assert.Equal("12345 67890", (await db.MeetingNotes.SingleAsync()).RawNotes);
     }
 
     [Fact]
@@ -80,7 +113,7 @@ public class MeetingNotesServiceTests
         var ollama = new FakeOllamaClient(OllamaResult.Ok(incompleteJson), OllamaResult.Ok(ValidJson));
         var svc = NewService(db, ollama);
 
-        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Notes." });
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Meeting notes." });
 
         Assert.True(result.Success);
         Assert.Equal(2, ollama.CallCount);
@@ -97,7 +130,7 @@ public class MeetingNotesServiceTests
         var ollama = new FakeOllamaClient(OllamaResult.Ok(missingArrays), OllamaResult.Ok(malformedArrays));
         var svc = NewService(db, ollama);
 
-        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Notes." });
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Meeting notes." });
 
         Assert.False(result.Success);
         Assert.Equal(2, ollama.CallCount);
@@ -129,7 +162,7 @@ public class MeetingNotesServiceTests
         using var db = TestDb.Create();
         var svc = NewService(db, new FakeOllamaClient(OllamaResult.Ok(ValidJson)));
 
-        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { LeadId = 999, RawNotes = "Notes." });
+        var result = await svc.CreateAsync(new MeetingNotesFormViewModel { LeadId = 999, RawNotes = "Meeting notes." });
 
         Assert.False(result.Success);
         Assert.Equal(0, await db.MeetingNotes.CountAsync());
@@ -141,7 +174,7 @@ public class MeetingNotesServiceTests
         using var db = TestDb.Create();
         var svc = NewService(db, new FakeOllamaClient(OllamaResult.Ok(ValidJson)));
 
-        await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Notes." });
+        await svc.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "Meeting notes." });
         var noteId = (await db.MeetingNotes.SingleAsync()).Id;
 
         var fetched = await svc.GetByIdAsync(noteId);

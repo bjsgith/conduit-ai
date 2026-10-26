@@ -200,5 +200,40 @@ public static class DbInitializer
 
         db.Leads.AddRange(leads);
         db.SaveChanges();
+
+        db.LeadFollowUps.AddRange(
+            new LeadFollowUp
+            {
+                LeadId = db.Leads.Single(l => l.Name == "Marcus Whitfield").Id,
+                ActionText = "Confirm a time for the second viewing and prepare comparable listings.",
+                DueAtUtc = now.AddHours(3),
+                CreatedAt = now.AddHours(-2),
+                UpdatedAt = now.AddHours(-2)
+            },
+            new LeadFollowUp
+            {
+                LeadId = db.Leads.Single(l => l.Name == "Priya Nair").Id,
+                ActionText = "Check in on the lender pre-approval and share light-rail condo options.",
+                DueAtUtc = now.AddDays(2),
+                CreatedAt = now.AddHours(-4),
+                UpdatedAt = now.AddHours(-4)
+            },
+            new LeadFollowUp
+            {
+                LeadId = db.Leads.Single(l => l.Name == "Daniel & Rebecca Foss").Id,
+                ActionText = "Confirm the weekend tour details and access instructions.",
+                DueAtUtc = now.AddDays(5),
+                CreatedAt = now.AddDays(-1),
+                UpdatedAt = now.AddDays(-1)
+            },
+            new LeadFollowUp
+            {
+                LeadId = db.Leads.Single(l => l.Name == "Thomas Reed").Id,
+                ActionText = "Send a brief post-closing check-in and ask about future referrals.",
+                DueAtUtc = now.AddHours(-6),
+                CreatedAt = now.AddDays(-1),
+                UpdatedAt = now.AddDays(-1)
+            });
+        db.SaveChanges();
     }
 }

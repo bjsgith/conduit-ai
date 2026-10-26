@@ -61,6 +61,20 @@ public class LeadServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_RejectsWhitespaceOnlyNameAfterNormalization()
+    {
+        using var db = TestDb.Create();
+        var service = NewService(db);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateAsync(new LeadFormViewModel
+        {
+            Name = "   ",
+            LeadSource = LeadSource.Website,
+            Status = LeadStatus.New
+        }));
+    }
+
+    [Fact]
     public async Task UpdateAsync_ChangesFields_AndBumpsUpdatedAt()
     {
         using var db = TestDb.Create();
@@ -197,5 +211,48 @@ public class LeadServiceTests
 
         Assert.Equal(3, result.Leads.Count);
         Assert.Equal("Sofia Alvarez", result.Leads[0].Name);
+    }
+
+    [Fact]
+    public async Task GetLeadList_PaginatesAndRetainsAppliedFilters()
+    {
+        using var db = TestDb.Create();
+        var now = DateTime.UtcNow;
+        for (var i = 0; i < 51; i++)
+        {
+            db.Leads.Add(new Lead
+            {
+                Name = $"Matching {i:00}",
+                Location = "Phoenix",
+                LeadSource = LeadSource.Website,
+                Status = LeadStatus.Contacted,
+                CreatedAt = now,
+                UpdatedAt = now.AddMinutes(i)
+            });
+        }
+
+        db.Leads.Add(new Lead { Name = "Other City", Location = "Tempe", LeadSource = LeadSource.Website, Status = LeadStatus.Contacted, CreatedAt = now, UpdatedAt = now });
+        db.Leads.Add(new Lead { Name = "Other Status", Location = "Phoenix", LeadSource = LeadSource.Website, Status = LeadStatus.New, CreatedAt = now, UpdatedAt = now });
+        await db.SaveChangesAsync();
+        var filter = new LeadFilterViewModel
+        {
+            Status = LeadStatus.Contacted,
+            Location = "Phoenix",
+            Page = 2
+        };
+
+        var result = await NewService(db).GetLeadListAsync(filter);
+
+        Assert.Equal(51, result.TotalCount);
+        Assert.Equal(25, result.Leads.Count);
+        Assert.Equal(2, result.Filter.Page);
+        Assert.Equal(LeadStatus.Contacted, result.Filter.Status);
+        Assert.Equal("Phoenix", result.Filter.Location);
+        Assert.Equal(3, result.TotalPages);
+
+        filter.Page = 99;
+        var lastPage = await NewService(db).GetLeadListAsync(filter);
+        Assert.Equal(3, lastPage.Filter.Page);
+        Assert.Single(lastPage.Leads);
     }
 }

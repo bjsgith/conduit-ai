@@ -45,4 +45,5 @@ public class Lead
     public ICollection<LeadInteraction> Interactions { get; set; } = new List<LeadInteraction>();
     public ICollection<LeadAnalysis> Analyses { get; set; } = new List<LeadAnalysis>();
     public ICollection<MeetingNote> MeetingNotes { get; set; } = new List<MeetingNote>();
+    public ICollection<LeadFollowUp> FollowUps { get; set; } = new List<LeadFollowUp>();
 }

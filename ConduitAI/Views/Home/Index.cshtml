@@ -42,7 +42,7 @@
     <div>
         <div class="hero-eyebrow">@now.ToString("dddd, MMMM d")</div>
         <h1>@greeting, <em>let's move deals</em></h1>
-        <p class="hero-sub">A live read on your book of business — pipeline health, priority leads, and the AI-surfaced follow-ups worth your attention today.</p>
+        <p class="hero-sub">A live read on your book of business — pipeline health, priority leads, and scheduled follow-ups due soon.</p>
     </div>
     <div class="hero-actions">
         <a class="btn" asp-controller="MeetingNotes" asp-action="Create">
@@ -90,7 +90,7 @@
             <span class="metric-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></span>
         </div>
         <div class="metric-value num">@Model.UpcomingFollowUps</div>
-        <div class="metric-foot">Avg AI score <b>@(Model.AverageLeadScore > 0 ? Model.AverageLeadScore.ToString() : "—")</b></div>
+        <div class="metric-foot">Due or overdue in 7 days · Avg AI score <b>@(Model.AverageLeadScore > 0 ? Model.AverageLeadScore.ToString() : "—")</b></div>
     </div>
 </div>
 
@@ -198,7 +198,7 @@
         {
             <div class="empty-state">
                 <div class="big">Nothing queued</div>
-                <div>Generate AI analysis on a lead to surface next actions.</div>
+                <div>Schedule an action from a lead record to track its due date.</div>
             </div>
         }
         else
@@ -209,9 +209,9 @@
                     <a class="queue-item" asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId">
                         <div class="queue-top">
                             <span class="cell-name">@item.LeadName</span>
-                            <span class="badge lvl-@DisplayText.Slug(item.Urgency)">@DisplayText.Humanize(item.Urgency)</span>
+                            <span class="follow-up-due">@item.DueAtUtc.ToLocalTime().ToString("MMM d, h:mm tt")</span>
                         </div>
-                        <div class="queue-action">@item.RecommendedNextAction</div>
+                        <div class="queue-action">@item.ActionText</div>
                     </a>
                 }
             </div>

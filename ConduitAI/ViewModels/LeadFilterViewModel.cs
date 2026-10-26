@@ -17,6 +17,9 @@ public class LeadFilterViewModel
     [Display(Name = "Min Score")]
     public int? MinLeadScore { get; set; }
 
+    [Range(1, int.MaxValue)]
+    public int Page { get; set; } = 1;
+
     [StringLength(150)]
     public string? Location { get; set; }
 

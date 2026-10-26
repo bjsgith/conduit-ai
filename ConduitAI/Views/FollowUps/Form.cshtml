@@ -1,0 +1,44 @@
+@model FollowUpFormViewModel
+@{
+    var editing = Model.Id.HasValue;
+    ViewData["Title"] = editing ? "Edit Follow-Up" : "Schedule Follow-Up";
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewData["Title"]</h1>
+        <span class="count-chip">For @Model.LeadName</span>
+    </div>
+</div>
+
+<section class="card form-card">
+    <div class="card-body">
+        <form method="post" asp-controller="FollowUps" asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@Model.Id">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="LeadId" />
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+            <div class="form-grid">
+                <div class="field full">
+                    <label asp-for="ActionText"></label>
+                    <textarea asp-for="ActionText" rows="3" placeholder="Call, email, arrange a tour…"></textarea>
+                    <span asp-validation-for="ActionText" class="text-danger"></span>
+                    <span class="hint">Review the action and choose a due date and time below.</span>
+                </div>
+                <div class="field">
+                    <label asp-for="DueAtLocal"></label>
+                    <input asp-for="DueAtLocal" type="datetime-local" />
+                    <span asp-validation-for="DueAtLocal" class="text-danger"></span>
+                    <span class="hint">Times use this computer’s local time.</span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">@(editing ? "Save Follow-Up" : "Schedule Follow-Up")</button>
+                <a class="btn btn-ghost" asp-controller="Leads" asp-action="Details" asp-route-id="@Model.LeadId">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -7,10 +7,12 @@ namespace ConduitAI.Controllers;
 public class LeadsController : Controller
 {
     private readonly ILeadService _leads;
+    private readonly IFollowUpService _followUps;
 
-    public LeadsController(ILeadService leads)
+    public LeadsController(ILeadService leads, IFollowUpService followUps)
     {
         _leads = leads;
+        _followUps = followUps;
     }
 
     // GET /Leads
@@ -28,6 +30,8 @@ public class LeadsController : Controller
         {
             return NotFound();
         }
+
+        model.FollowUps = await _followUps.GetForLeadAsync(id);
 
         return View(model);
     }
