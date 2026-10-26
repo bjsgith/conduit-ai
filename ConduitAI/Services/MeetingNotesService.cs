@@ -41,7 +41,7 @@ public class MeetingNotesService : IMeetingNotesService
         MeetingNotesFormViewModel form, CancellationToken ct = default)
     {
         var normalizedNotes = form.RawNotes?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedNotes) || normalizedNotes.Length < 10)
+        if (string.IsNullOrWhiteSpace(normalizedNotes) || normalizedNotes.Count(c => !char.IsWhiteSpace(c)) < 10)
         {
             return AiOperationResult<MeetingNoteSummaryViewModel>.Fail(
                 "Meeting notes must contain at least 10 non-whitespace characters.");

@@ -22,7 +22,7 @@
     </div>
     <div class="detail-actions">
         <a class="btn" asp-controller="MeetingNotes" asp-action="Create" asp-route-leadId="@lead.Id">Add Meeting Notes</a>
-        <a class="btn btn-brass" asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@lead.Id" asp-route-actionText="@Model.LatestAnalysis?.RecommendedNextAction">Schedule Follow-Up</a>
+        <a class="btn btn-brass" asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@lead.Id">Schedule Follow-Up</a>
         <a class="btn" asp-controller="Leads" asp-action="Edit" asp-route-id="@lead.Id">Edit</a>
         <a class="btn btn-ghost" asp-controller="Leads" asp-action="Delete" asp-route-id="@lead.Id">Delete</a>
     </div>
@@ -51,7 +51,7 @@
         <section class="card">
             <div class="card-head">
                 <h3>Scheduled Follow-Ups</h3>
-                <a class="btn btn-sm btn-ghost" asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@lead.Id" asp-route-actionText="@Model.LatestAnalysis?.RecommendedNextAction">Schedule</a>
+                <a class="btn btn-sm btn-ghost" asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@lead.Id">Schedule</a>
             </div>
             <div class="card-body">
                 @if (Model.FollowUps.Count == 0)

@@ -75,7 +75,9 @@ public class MeetingNotesServiceTests
     [Theory]
     [InlineData("          ")]
     [InlineData("        12345678       ")]
-    public async Task CreateAsync_RejectsNotesBelowMinimumAfterTrim_WithoutCallingOllama(string rawNotes)
+    [InlineData("123456789")]
+    [InlineData("A        B")]
+    public async Task CreateAsync_RejectsNotesWithFewerThanTenNonWhitespaceCharacters_WithoutCallingOllama(string rawNotes)
     {
         using var db = TestDb.Create();
         var ollama = new FakeOllamaClient(OllamaResult.Ok(ValidJson));
@@ -87,6 +89,20 @@ public class MeetingNotesServiceTests
         Assert.Contains("at least 10", result.ErrorMessage);
         Assert.Equal(0, ollama.CallCount);
         Assert.Empty(db.MeetingNotes);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AcceptsExactlyTenNonWhitespaceCharacters()
+    {
+        using var db = TestDb.Create();
+        var ollama = new FakeOllamaClient(OllamaResult.Ok(ValidJson));
+        var service = NewService(db, ollama);
+
+        var result = await service.CreateAsync(new MeetingNotesFormViewModel { RawNotes = "12345 67890" });
+
+        Assert.True(result.Success);
+        Assert.Equal(1, ollama.CallCount);
+        Assert.Equal("12345 67890", (await db.MeetingNotes.SingleAsync()).RawNotes);
     }
 
     [Fact]

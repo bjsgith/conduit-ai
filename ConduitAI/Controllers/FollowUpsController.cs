@@ -16,19 +16,19 @@ public class FollowUpsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create(int leadId, string? actionText)
+    public async Task<IActionResult> Create(int leadId)
     {
-        var lead = await _leads.GetByIdAsync(leadId);
-        if (lead is null)
+        var details = await _leads.GetDetailsAsync(leadId);
+        if (details is null)
         {
             return NotFound();
         }
 
         return View("Form", new FollowUpFormViewModel
         {
-            LeadId = lead.Id,
-            LeadName = lead.Name,
-            ActionText = actionText ?? string.Empty
+            LeadId = details.Lead.Id,
+            LeadName = details.Lead.Name,
+            ActionText = details.LatestAnalysis?.RecommendedNextAction ?? string.Empty
         });
     }
 

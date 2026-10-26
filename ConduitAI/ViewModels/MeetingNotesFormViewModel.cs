@@ -13,8 +13,8 @@ public class MeetingNotesFormViewModel
     [Display(Name = "Attach to lead (optional)")]
     public int? LeadId { get; set; }
 
-    [Required(ErrorMessage = "Paste the meeting notes to analyze.")]
-    [StringLength(20000, MinimumLength = 10, ErrorMessage = "Notes must be between 10 and 20000 characters.")]
+    [Required(ErrorMessage = "Meeting notes must contain at least 10 non-whitespace characters.")]
+    [StringLength(20000, ErrorMessage = "Meeting notes must be 20000 characters or fewer.")]
     [Display(Name = "Meeting notes")]
     public string RawNotes { get; set; } = string.Empty;
 
